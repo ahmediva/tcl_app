@@ -12,6 +12,7 @@ class AuthService {
         password: password,
       );
 
+      print('Login response user: ${response.user}');
       if (response.user != null) {
         // Fetch user data from database
         final userData = await _supabase
@@ -19,6 +20,8 @@ class AuthService {
             .select()
             .eq('id', response.user!.id)
             .single();
+
+        print('User data fetched: $userData');
 
         return UserModel.fromJson(userData);
       }
@@ -34,26 +37,46 @@ class AuthService {
         email: email,
         password: password,
         data: {
-          'name': name,
+          'full_name': name,
         },
       );
 
-      if (response.user != null) {
-        // Create user in database
+      print('Registration response: $response');
+
+      // Supabase AuthResponse does not have 'error' property, check for error differently
+      if (response.user == null) {
+        print('Registration failed: No user returned');
+        return null;
+      }
+
+      // Check if user is confirmed (email confirmed)
+      final userConfirmed = response.user!.emailConfirmedAt != null;
+
+      if (!userConfirmed) {
+        print('Registration pending email confirmation.');
+        // You can throw or return a special value here to indicate pending confirmation
+        return null;
+      }
+
+      // Create user in database
+      try {
         await _supabase.from('users').insert({
           'id': response.user!.id,
           'email': email,
-          'name': name,
+          'full_name': name,
           'role': 'agent', // Default role
         });
-
-        return UserModel(
-          id: response.user!.id,
-          email: email,
-          name: name,
-          role: 'agent',
-        );
+      } catch (e) {
+        print('Error inserting user into database: $e');
+        return null;
       }
+
+      return UserModel(
+        id: response.user!.id,
+        email: email,
+        name: name,
+        role: 'agent',
+      );
     } catch (e) {
       print('Registration error: $e');
     }

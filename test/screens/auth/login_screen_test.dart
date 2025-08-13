@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:tcl_mobile_app/providers/auth_provider.dart';
 import 'package:tcl_mobile_app/screens/auth/login_screen.dart';
 import 'package:tcl_mobile_app/models/user_model.dart';
-import 'package:tcl_mobile_app/models/user_model.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 
@@ -34,14 +33,15 @@ void main() {
     expect(find.text('TCL Mobile App'), findsOneWidget);
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+    // Use find.widgetWithText to avoid ambiguity with multiple 'Login' texts
+    expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);
   });
 
   testWidgets('Shows error on empty email and password', (WidgetTester tester) async {
     await tester.pumpWidget(createLoginScreen());
 
     // Tap login button without entering credentials
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pump();
 
     // Verify error messages are shown
@@ -55,7 +55,7 @@ void main() {
     // Enter invalid email
     await tester.enterText(find.byType(TextFormField).first, 'invalid-email');
     await tester.enterText(find.byType(TextFormField).last, 'password123');
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pump();
 
     // Verify error message is shown
@@ -63,7 +63,9 @@ void main() {
   });
 
   testWidgets('Calls login method with correct credentials', (WidgetTester tester) async {
-    when(mockAuthProvider.login(any, any)).thenAnswer((_) async => true);
+    // Use anyNamed or specific string matchers instead of any
+    when(mockAuthProvider.login(anyNamed('email'), anyNamed('password')))
+        .thenAnswer((_) async => true);
     when(mockAuthProvider.user).thenReturn(null);
 
     await tester.pumpWidget(createLoginScreen());
@@ -73,7 +75,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).last, 'password123');
     
     // Tap login button
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pump();
 
     // Verify login method was called with correct credentials
@@ -82,9 +84,8 @@ void main() {
 
   testWidgets('Shows loading state during login', (WidgetTester tester) async {
     // Setup mock to delay the response
-    when(mockAuthProvider.login(any, any)).thenAnswer(
-      (_) => Future.delayed(Duration(seconds: 1), () => true),
-    );
+    when(mockAuthProvider.login(anyNamed('email'), anyNamed('password')))
+        .thenAnswer((_) => Future.delayed(Duration(seconds: 1), () => true));
     when(mockAuthProvider.user).thenReturn(null);
 
     await tester.pumpWidget(createLoginScreen());
@@ -92,7 +93,7 @@ void main() {
     // Enter credentials and tap login
     await tester.enterText(find.byType(TextFormField).first, 'test@example.com');
     await tester.enterText(find.byType(TextFormField).last, 'password123');
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pump();
 
     // Verify loading state
@@ -100,14 +101,15 @@ void main() {
   });
 
   testWidgets('Shows error message on login failure', (WidgetTester tester) async {
-    when(mockAuthProvider.login(any, any)).thenAnswer((_) async => false);
+    when(mockAuthProvider.login(anyNamed('email'), anyNamed('password')))
+        .thenAnswer((_) async => false);
 
     await tester.pumpWidget(createLoginScreen());
 
     // Enter credentials and tap login
     await tester.enterText(find.byType(TextFormField).first, 'test@example.com');
     await tester.enterText(find.byType(TextFormField).last, 'password123');
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pumpAndSettle();
 
     // Verify error message is shown
@@ -119,7 +121,8 @@ void main() {
 
   testWidgets('Navigates to correct dashboard on successful login',
       (WidgetTester tester) async {
-    when(mockAuthProvider.login(any, any)).thenAnswer((_) async => true);
+    when(mockAuthProvider.login(anyNamed('email'), anyNamed('password')))
+        .thenAnswer((_) async => true);
     
     // Test admin navigation
     when(mockAuthProvider.user).thenReturn(
@@ -147,7 +150,7 @@ void main() {
     // Enter credentials and login
     await tester.enterText(find.byType(TextFormField).first, 'admin@test.com');
     await tester.enterText(find.byType(TextFormField).last, 'password123');
-    await tester.tap(find.text('Login'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
     await tester.pumpAndSettle();
 
     // Verify navigation to admin dashboard
