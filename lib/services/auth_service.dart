@@ -16,7 +16,7 @@ class AuthService {
       if (response.user != null) {
         // Fetch user data from database
         final userData = await _supabase
-            .from('users')
+            .from('profiles')
             .select()
             .eq('id', response.user!.id)
             .single();

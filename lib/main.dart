@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'config/app_config.dart';
 import 'config/supabase_config.dart';
 import 'routes/app_routes.dart';
+import 'providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,13 +16,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TCL Mobile App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return ChangeNotifierProvider(
+      create: (context) => AuthProvider(),
+      child: MaterialApp(
+        title: 'TCL Mobile App',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        initialRoute: AppRoutes.login,
+        onGenerateRoute: AppRoutes.generateRoute,
       ),
-      initialRoute: AppRoutes.login,
-      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
