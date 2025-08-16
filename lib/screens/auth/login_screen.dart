@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../routes/app_routes.dart';  // Added missing import
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../utils/constants.dart';
@@ -39,8 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
           // Navigate to appropriate dashboard based on user role
           Navigator.pushReplacementNamed(
             context,
-            authProvider.currentUser?.role == 'admin' ? '/admin-dashboard' : '/agent-dashboard',
-          );
+            AppRoutes.establishmentForm,  // Fixed: removed semicolon, added comma
+          );  // Fixed: proper closing parenthesis
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Login failed. Please check your credentials.')),

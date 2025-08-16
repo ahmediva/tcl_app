@@ -23,7 +23,7 @@ class AuthService {
 
         print('User data fetched: $userData');
 
-        return UserModel.fromJson(userData);
+        return UserModel.fromJson(userData); // Return user data without redirection
       }
     } catch (e) {
       print('Login error: $e');

@@ -71,7 +71,7 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
       address: _addressController.text.trim(),
       superficie: num.tryParse(_superficieController.text.trim()) ?? 0,
       categorie: _selectedCategorie ?? '',
-      statut: _statut,
+      status: _statut,
       ownerName: _ownerNameController.text.trim(),
       ownerCin: _ownerCinController.text.trim(),
       tenantName: _tenantNameController.text.trim(),

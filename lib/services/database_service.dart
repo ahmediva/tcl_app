@@ -23,6 +23,7 @@ class DatabaseService {
       }
     } catch (e) {
       print('Error adding etablissement: $e');
+      print('Failed to insert data: ${etablissement.toJson()}');
     }
     return null;
   }

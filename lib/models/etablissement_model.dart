@@ -4,7 +4,7 @@ class EtablissementModel {
   final String address;
   final num superficie;
   final String categorie;
-  final bool statut;
+  final bool status;
   final String ownerName;
   final String ownerCin;
   final String tenantName;
@@ -21,7 +21,7 @@ class EtablissementModel {
     required this.address,
     required this.superficie,
     required this.categorie,
-    required this.statut,
+    required this.status,
     required this.ownerName,
     required this.ownerCin,
     required this.tenantName,
@@ -40,7 +40,7 @@ class EtablissementModel {
       address: json['address'],
       superficie: json['superficie'],
       categorie: json['categorie'],
-      statut: json['statut'] == true || json['statut'] == 'true',
+      status: json['status'] == true || json['status'] == 'true',
       ownerName: json['owner_name'],
       ownerCin: json['owner_cin'],
       tenantName: json['tenant_name'],
@@ -60,7 +60,7 @@ class EtablissementModel {
       'address': address,
       'superficie': superficie,
       'categorie': categorie,
-      'statut': statut,
+      'status': status,
       'owner_name': ownerName,
       'owner_cin': ownerCin,
       'tenant_name': tenantName,
