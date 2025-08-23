@@ -47,7 +47,7 @@ class EstablishmentProvider with ChangeNotifier {
     try {
       final success = await DatabaseService().updateEtablissement(etablissement);
       if (success) {
-        final index = _etablissements.indexWhere((e) => e.id == etablissement.id);
+        final index = _etablissements.indexWhere((e) => e.artNouvCode == etablissement.artNouvCode);
         if (index != -1) {
           _etablissements[index] = etablissement;
           notifyListeners();
@@ -61,11 +61,11 @@ class EstablishmentProvider with ChangeNotifier {
   }
 
   // Delete an etablissement
-  Future<bool> deleteEtablissement(String id) async {
+  Future<bool> deleteEtablissement(String artNouvCode) async {
     try {
-      final success = await DatabaseService().deleteEtablissement(id);
+      final success = await DatabaseService().deleteEtablissement(artNouvCode);
       if (success) {
-        _etablissements.removeWhere((e) => e.id == id);
+        _etablissements.removeWhere((e) => e.artNouvCode == artNouvCode);
         notifyListeners();
         return true;
       }
