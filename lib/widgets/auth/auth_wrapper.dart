@@ -12,7 +12,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  UserModel? _user;
+  TCLUser? _user;
 
   @override
   void initState() {
@@ -22,11 +22,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
       setState(() {
         if (authState.session?.user != null) {
           // In a real implementation, you would fetch the full user data from your database
-          _user = UserModel(
+          _user = TCLUser(
             id: authState.session!.user!.id,
+            userCode: 'TEMP',
+            username: authState.session!.user!.email ?? '',
             email: authState.session!.user!.email ?? '',
-            name: authState.session!.user!.userMetadata?['name'] ?? '',
-            role: 'agent', // Default role, would be fetched from database in real implementation
+            passwordHash: '',
+            firstName: authState.session!.user!.userMetadata?['name'] ?? '',
+            lastName: '',
+            agentType: 'CONSULTANT', // Default role, would be fetched from database in real implementation
+            agentLevel: 'JUNIOR',
+            permissions: UserPermissions(
+              canCreateArticles: false,
+              canEditArticles: false,
+              canDeleteArticles: false,
+              canViewReports: true,
+              canExportData: false,
+              canManageUsers: false,
+            ),
+            isActive: true,
+            isVerified: authState.session!.user!.emailConfirmedAt != null,
+            loginAttempts: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
           );
         } else {
           _user = null;

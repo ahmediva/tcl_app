@@ -31,15 +31,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isLoading = true);
       
       try {
-        final user = await AuthService().register(
-          _emailController.text.trim(),
-          _passwordController.text,
-          _nameController.text.trim(),
+        final success = await AuthService().registerPublicUser(
+          userCode: 'USER${DateTime.now().millisecondsSinceEpoch}',
+          username: _emailController.text.trim().split('@')[0],
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          firstName: _nameController.text.trim().split(' ').first,
+          lastName: _nameController.text.trim().split(' ').length > 1 
+              ? _nameController.text.trim().split(' ').skip(1).join(' ') 
+              : '',
+          agentType: 'CONSULTANT', // Default role for new registrations
         );
         
-        if (user != null) {
+        if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Registration successful!')),
+            SnackBar(content: Text('Registration successful! Please contact an administrator to activate your account.')),
           );
           Navigator.pushReplacementNamed(context, '/login');
         } else {
@@ -49,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred. Please try again.')),
+          SnackBar(content: Text('An error occurred: $e')),
         );
       } finally {
         setState(() => _isLoading = false);

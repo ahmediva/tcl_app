@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/arrondissement_model.dart';
 import '../services/database_service.dart';
@@ -103,15 +104,65 @@ class ArrondissementProvider with ChangeNotifier {
 
   /// Obtenir un arrondissement par son code
   ArrondissementModel? getArrondissementByCode(String code) {
-    return _arrondissements.firstWhere(
-      (a) => a.code == code,
-      orElse: () => ArrondissementModel(
-        code: '',
-        libelle: '',
-        dateEtat: DateTime.now(),
-        codeEtat: '',
-      ),
-    );
+    try {
+      return _arrondissements.firstWhere(
+        (a) => a.code == code,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Obtenir les arrondissements avec coordonnées
+  List<ArrondissementModel> get arrondissementsWithCoordinates {
+    return _arrondissements.where((a) => a.hasCoordinates).toList();
+  }
+
+  /// Obtenir les arrondissements proches d'un point
+  List<ArrondissementModel> getArrondissementsNearPoint(double lat, double lon, {double radiusKm = 10.0}) {
+    final arrondissementsWithCoords = arrondissementsWithCoordinates;
+    final nearby = <ArrondissementModel>[];
+    
+    for (final arrondissement in arrondissementsWithCoords) {
+      final distance = _calculateDistance(
+        lat, lon,
+        arrondissement.centerLatitude!,
+        arrondissement.centerLongitude!,
+      );
+      
+      if (distance <= radiusKm) {
+        nearby.add(arrondissement);
+      }
+    }
+    
+    // Sort by distance
+    nearby.sort((a, b) {
+      final distA = _calculateDistance(lat, lon, a.centerLatitude!, a.centerLongitude!);
+      final distB = _calculateDistance(lat, lon, b.centerLatitude!, b.centerLongitude!);
+      return distA.compareTo(distB);
+    });
+    
+    return nearby;
+  }
+
+  /// Calculer la distance entre deux points (formule de Haversine)
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Rayon de la Terre en kilomètres
+    
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+    
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        sin(_degreesToRadians(lat1)) * sin(_degreesToRadians(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (3.14159 / 180);
   }
 
   /// Vider les erreurs

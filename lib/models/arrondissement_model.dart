@@ -7,6 +7,12 @@ class ArrondissementModel {
   final String codeEtat;      // Code d'état (A: Actif, I: Inactif, etc.)
   final DateTime? createdAt;  // Date de création
   final DateTime? updatedAt;  // Date de dernière modification
+  
+  // Google Maps coordinates
+  final double? centerLatitude;   // Latitude du centre de l'arrondissement
+  final double? centerLongitude;  // Longitude du centre de l'arrondissement
+  final double? zoomLevel;        // Niveau de zoom recommandé pour la carte
+  final List<Map<String, double>>? boundaryCoordinates; // Coordonnées des limites de l'arrondissement
 
   ArrondissementModel({
     required this.code,
@@ -15,6 +21,10 @@ class ArrondissementModel {
     required this.codeEtat,
     this.createdAt,
     this.updatedAt,
+    this.centerLatitude,
+    this.centerLongitude,
+    this.zoomLevel,
+    this.boundaryCoordinates,
   });
 
   /// Constructeur à partir des données JSON de Supabase
@@ -26,6 +36,14 @@ class ArrondissementModel {
       codeEtat: json['code_etat'],
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      centerLatitude: json['center_latitude']?.toDouble(),
+      centerLongitude: json['center_longitude']?.toDouble(),
+      zoomLevel: json['zoom_level']?.toDouble(),
+      boundaryCoordinates: json['boundary_coordinates'] != null 
+          ? List<Map<String, double>>.from(
+              json['boundary_coordinates'].map((coord) => Map<String, double>.from(coord))
+            )
+          : null,
     );
   }
 
@@ -38,11 +56,32 @@ class ArrondissementModel {
       'code_etat': codeEtat,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'center_latitude': centerLatitude,
+      'center_longitude': centerLongitude,
+      'zoom_level': zoomLevel,
+      'boundary_coordinates': boundaryCoordinates,
     };
   }
 
   /// Vérifie si l'arrondissement est actif
   bool get estActif => codeEtat == 'A';
+
+  /// Vérifie si l'arrondissement a des coordonnées
+  bool get hasCoordinates => centerLatitude != null && centerLongitude != null;
+
+  /// Vérifie si l'arrondissement a des limites définies
+  bool get hasBoundaries => boundaryCoordinates != null && boundaryCoordinates!.isNotEmpty;
+
+  /// Obtient le centre de l'arrondissement comme LatLng
+  Map<String, double>? get center {
+    if (hasCoordinates) {
+      return {
+        'latitude': centerLatitude!,
+        'longitude': centerLongitude!,
+      };
+    }
+    return null;
+  }
 
   /// Représentation textuelle pour l'affichage
   @override

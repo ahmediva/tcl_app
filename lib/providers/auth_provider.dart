@@ -3,17 +3,50 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  UserModel? _user;
+  TCLUser? _user;
   bool _isLoading = false;
 
-  UserModel? get user => _user;
-  UserModel? get currentUser => _user; // Add currentUser property
+  TCLUser? get user => _user;
+  TCLUser? get currentUser => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
+
+  // Permission getters
+  bool get canCreateArticles => _user?.permissions.canCreateArticles ?? false;
+  bool get canEditArticles => _user?.permissions.canEditArticles ?? false;
+  bool get canDeleteArticles => _user?.permissions.canDeleteArticles ?? false;
+  bool get canViewReports => _user?.permissions.canViewReports ?? false;
+  bool get canExportData => _user?.permissions.canExportData ?? false;
+  bool get canManageUsers => _user?.permissions.canManageUsers ?? false;
+
+  // User type getters
+  bool get isAdmin => _user?.isAdmin ?? false;
+  bool get isSupervisor => _user?.isSupervisor ?? false;
+  bool get isControlAgent => _user?.isControlAgent ?? false;
+  bool get isCollector => _user?.isCollector ?? false;
+  bool get isConsultant => _user?.isConsultant ?? false;
+
+  // Geographic assignment getters
+  String? get assignedArrondissement => _user?.assignedArrondissement;
+  String? get assignedCommune => _user?.assignedCommune;
+  bool get hasGeographicAssignment => _user?.hasGeographicAssignment ?? false;
 
   set isLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  // Initialize auth provider
+  Future<void> initialize() async {
+    try {
+      final user = await AuthService().getCurrentUser();
+      if (user != null) {
+        _user = user;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Initialization error: $e');
+    }
   }
 
   // Login method
@@ -34,27 +67,159 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  // Register method
-  Future<bool> register(String email, String password, String name) async {
+  // Login with username
+  Future<bool> loginWithUsername(String username, String password) async {
     isLoading = true;
     try {
-      final user = await AuthService().register(email, password, name);
+      final user = await AuthService().loginWithUsername(username, password);
       if (user != null) {
         _user = user;
         notifyListeners();
         return true;
       }
     } catch (e) {
-      print('Registration error: $e');
+      print('Username login error: $e');
     } finally {
       isLoading = false;
     }
     return false;
   }
 
+  // Register new user (admin only)
+  Future<bool> registerUser({
+    required String userCode,
+    required String username,
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String agentType,
+    String agentLevel = 'JUNIOR',
+    String? phone,
+    String? address,
+    String? employeeId,
+    String? department,
+    String? position,
+    String? assignedArrondissement,
+    String? assignedCommune,
+    Map<String, bool>? customPermissions,
+  }) async {
+    if (!canManageUsers) {
+      print('Insufficient permissions to create users');
+      return false;
+    }
+
+    isLoading = true;
+    try {
+      final user = await AuthService().registerUser(
+        userCode: userCode,
+        username: username,
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        agentType: agentType,
+        agentLevel: agentLevel,
+        phone: phone,
+        address: address,
+        employeeId: employeeId,
+        department: department,
+        position: position,
+        assignedArrondissement: assignedArrondissement,
+        assignedCommune: assignedCommune,
+        customPermissions: customPermissions,
+      );
+      
+      if (user != null) {
+        // Don't set as current user, just return success
+        return true;
+      }
+    } catch (e) {
+      print('User registration error: $e');
+    } finally {
+      isLoading = false;
+    }
+    return false;
+  }
+
+  // Check permission
+  Future<bool> hasPermission(String permission) async {
+    try {
+      return await AuthService().hasPermission(permission);
+    } catch (e) {
+      print('Permission check error: $e');
+      return false;
+    }
+  }
+
+  // Get assigned articles
+  Future<List<Map<String, dynamic>>> getAssignedArticles() async {
+    try {
+      return await AuthService().getAssignedArticles();
+    } catch (e) {
+      print('Error getting assigned articles: $e');
+      return [];
+    }
+  }
+
+  // Get articles by geographic area
+  Future<List<Map<String, dynamic>>> getArticlesByArea(String? arrondissement, String? commune) async {
+    try {
+      return await AuthService().getArticlesByArea(arrondissement, commune);
+    } catch (e) {
+      print('Error getting articles by area: $e');
+      return [];
+    }
+  }
+
+  // Update user profile
+  Future<bool> updateProfile(Map<String, dynamic> updates) async {
+    try {
+      final success = await AuthService().updateProfile(updates);
+      if (success) {
+        // Refresh user data
+        final updatedUser = await AuthService().getCurrentUser();
+        if (updatedUser != null) {
+          _user = updatedUser;
+          notifyListeners();
+        }
+      }
+      return success;
+    } catch (e) {
+      print('Profile update error: $e');
+      return false;
+    }
+  }
+
+  // Refresh user data
+  Future<void> refreshUser() async {
+    try {
+      final user = await AuthService().getCurrentUser();
+      if (user != null) {
+        _user = user;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('User refresh error: $e');
+    }
+  }
+
   // Logout method
   Future<void> logout() async {
-    await AuthService().logout();
+    try {
+      await AuthService().logout();
+      _user = null;
+      notifyListeners();
+    } catch (e) {
+      print('Logout error: $e');
+      // Force logout even if there's an error
+      _user = null;
+      notifyListeners();
+    }
+  }
+
+  // Clear user data (for testing or error recovery)
+  void clearUser() {
     _user = null;
     notifyListeners();
   }

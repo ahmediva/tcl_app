@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/arrondissement_provider.dart';
 import '../../widgets/arrondissement_dropdown.dart';
+import '../../widgets/arrondissement_map_selector.dart';
 import 'package:geolocator/geolocator.dart';
 
 class EstablishmentForm extends StatefulWidget {
@@ -18,42 +19,81 @@ class EstablishmentForm extends StatefulWidget {
 class _EstablishmentFormState extends State<EstablishmentForm> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _matriculeController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _superficieController = TextEditingController();
-  String? _selectedCategorie;
-  String? _selectedArrondissement;
-  bool _statut = true;
-  final TextEditingController _ownerNameController = TextEditingController();
-  final TextEditingController _ownerCinController = TextEditingController();
-  final TextEditingController _tenantNameController = TextEditingController();
-  final TextEditingController _tenantActivityController = TextEditingController();
-  final TextEditingController _latitudeController = TextEditingController();
-  final TextEditingController _longitudeController = TextEditingController();
+  // Controllers for all ARTICLE table fields
+  final TextEditingController _artNouvCodeController = TextEditingController();
+  final TextEditingController _artImpController = TextEditingController();
+  final TextEditingController _artTauxPresController = TextEditingController();
+  final TextEditingController _artMntTaxeController = TextEditingController();
+  final TextEditingController _artRedCodeController = TextEditingController();
+  final TextEditingController _artMondController = TextEditingController();
+  final TextEditingController _artOccupController = TextEditingController();
+  final TextEditingController _artRueController = TextEditingController();
+  final TextEditingController _artTexteAdresseController = TextEditingController();
+  final TextEditingController _artSurTotController = TextEditingController();
+  final TextEditingController _artSurCouvController = TextEditingController();
+  final TextEditingController _artPrixRefController = TextEditingController();
+  final TextEditingController _artCatArtController = TextEditingController();
+  final TextEditingController _artQualOccupController = TextEditingController();
+  final TextEditingController _artSurContController = TextEditingController();
+  final TextEditingController _artSurDeclController = TextEditingController();
+  final TextEditingController _artPrixMetreController = TextEditingController();
+  final TextEditingController _artBaseTaxeController = TextEditingController();
+  final TextEditingController _codeGouvController = TextEditingController();
+  final TextEditingController _codeDelegController = TextEditingController();
+  final TextEditingController _codeComController = TextEditingController();
+  final TextEditingController _redTypePrporController = TextEditingController();
+  final TextEditingController _artTelDeclController = TextEditingController();
+  final TextEditingController _artEmailDeclController = TextEditingController();
+  final TextEditingController _artCommentaireController = TextEditingController();
+  final TextEditingController _artCatActiviteController = TextEditingController();
+  final TextEditingController _artNomCommerceController = TextEditingController();
+  final TextEditingController _artOccupVoieController = TextEditingController();
+  final TextEditingController _artLatitudeController = TextEditingController();
+  final TextEditingController _artLongitudeController = TextEditingController();
 
+  String? _selectedArrondissement;
+  int _artEtat = 1; // Default to 1 (active)
   bool _isLoading = false;
   final DatabaseService _databaseService = DatabaseService();
 
-  final List<String> _categories = [
-    'Seller of fruits',
-    'Magazin',
-    'Restaurant',
-    'Clothing',
-    'Electronics',
-    'Other',
-  ];
+  // Dropdown options
+  final List<String> _etatOptions = ['1', '0']; // 1 = Active, 0 = Inactive
+  final List<String> _redTypePrporOptions = ['1', '2', '3']; // Property types
+  final List<String> _artCatActiviteOptions = ['1', '2', '3', '4', '5']; // Activity categories
 
   @override
   void dispose() {
-    _matriculeController.dispose();
-    _addressController.dispose();
-    _superficieController.dispose();
-    _ownerNameController.dispose();
-    _ownerCinController.dispose();
-    _tenantNameController.dispose();
-    _tenantActivityController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
+    // Dispose all controllers
+    _artNouvCodeController.dispose();
+    _artImpController.dispose();
+    _artTauxPresController.dispose();
+    _artMntTaxeController.dispose();
+    _artRedCodeController.dispose();
+    _artMondController.dispose();
+    _artOccupController.dispose();
+    _artRueController.dispose();
+    _artTexteAdresseController.dispose();
+    _artSurTotController.dispose();
+    _artSurCouvController.dispose();
+    _artPrixRefController.dispose();
+    _artCatArtController.dispose();
+    _artQualOccupController.dispose();
+    _artSurContController.dispose();
+    _artSurDeclController.dispose();
+    _artPrixMetreController.dispose();
+    _artBaseTaxeController.dispose();
+    _codeGouvController.dispose();
+    _codeDelegController.dispose();
+    _codeComController.dispose();
+    _redTypePrporController.dispose();
+    _artTelDeclController.dispose();
+    _artEmailDeclController.dispose();
+    _artCommentaireController.dispose();
+    _artCatActiviteController.dispose();
+    _artNomCommerceController.dispose();
+    _artOccupVoieController.dispose();
+    _artLatitudeController.dispose();
+    _artLongitudeController.dispose();
     super.dispose();
   }
 
@@ -66,50 +106,50 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
     });
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final createdBy = authProvider.user?.name ?? 'Unknown';
+    final createdBy = authProvider.user?.fullName ?? 'Unknown';
 
     final newEtablissement = EtablissementModel(
-      artNouvCode: _matriculeController.text.trim(),
+      artNouvCode: _artNouvCodeController.text.trim(),
       artDebPer: null,
       artFinPer: null,
-      artImp: null,
-      artTauxPres: null,
+      artImp: int.tryParse(_artImpController.text.trim()),
+      artTauxPres: double.tryParse(_artTauxPresController.text.trim()),
       artDateDebImp: null,
       artDateFinImp: null,
-      artMntTaxe: null,
+      artMntTaxe: double.tryParse(_artMntTaxeController.text.trim()),
       artAgent: createdBy,
       artDateSaisie: DateTime.now(),
-      artRedCode: _ownerCinController.text.trim(),
-      artMond: _tenantNameController.text.trim(),
-      artOccup: _tenantActivityController.text.trim(),
-      artArrond: _selectedArrondissement ?? '01', // Use selected arrondissement or default
-      artRue: '001', // Default rue
-      artTexteAdresse: _addressController.text.trim(),
-      artSurTot: double.tryParse(_superficieController.text.trim()),
-      artSurCouv: null,
-      artPrixRef: null,
-      artCatArt: _selectedCategorie ?? '',
-      artQualOccup: null,
-      artSurCont: null,
-      artSurDecl: null,
-      artPrixMetre: null,
-      artBaseTaxe: null,
-      artEtat: _statut ? 1 : 0,
+      artRedCode: _artRedCodeController.text.trim(),
+      artMond: _artMondController.text.trim(),
+      artOccup: _artOccupController.text.trim(),
+      artArrond: _selectedArrondissement ?? '01',
+      artRue: _artRueController.text.trim(),
+      artTexteAdresse: _artTexteAdresseController.text.trim(),
+      artSurTot: double.tryParse(_artSurTotController.text.trim()),
+      artSurCouv: double.tryParse(_artSurCouvController.text.trim()),
+      artPrixRef: double.tryParse(_artPrixRefController.text.trim()),
+      artCatArt: _artCatArtController.text.trim(),
+      artQualOccup: _artQualOccupController.text.trim(),
+      artSurCont: double.tryParse(_artSurContController.text.trim()),
+      artSurDecl: double.tryParse(_artSurDeclController.text.trim()),
+      artPrixMetre: double.tryParse(_artPrixMetreController.text.trim()),
+      artBaseTaxe: int.tryParse(_artBaseTaxeController.text.trim()),
+      artEtat: _artEtat,
       artTaxeOffice: null,
       artNumRole: null,
-      codeGouv: null,
-      codeDeleg: null,
+      codeGouv: int.tryParse(_codeGouvController.text.trim()),
+      codeDeleg: int.tryParse(_codeDelegController.text.trim()),
       codeImeda: null,
-      codeCom: null,
-      redTypePrpor: null,
-      artTelDecl: _ownerCinController.text.trim(),
-      artEmailDecl: '',
-      artCommentaire: null,
-      artCatActivite: null,
-      artNomCommerce: _ownerNameController.text.trim(),
-      artOccupVoie: null,
-      artLatitude: double.tryParse(_latitudeController.text.trim()) ?? 0.0,
-      artLongitude: double.tryParse(_longitudeController.text.trim()) ?? 0.0,
+      codeCom: _codeComController.text.trim(),
+      redTypePrpor: int.tryParse(_redTypePrporController.text.trim()),
+      artTelDecl: _artTelDeclController.text.trim(),
+      artEmailDecl: _artEmailDeclController.text.trim(),
+      artCommentaire: _artCommentaireController.text.trim(),
+      artCatActivite: int.tryParse(_artCatActiviteController.text.trim()),
+      artNomCommerce: _artNomCommerceController.text.trim(),
+      artOccupVoie: int.tryParse(_artOccupVoieController.text.trim()),
+      artLatitude: double.tryParse(_artLatitudeController.text.trim()) ?? 0.0,
+      artLongitude: double.tryParse(_artLongitudeController.text.trim()) ?? 0.0,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -146,7 +186,9 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Formulaire Établissement'),
+        title: Text('Formulaire Établissement - ARTICLE'),
+        backgroundColor: Colors.blue[800],
+        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
@@ -156,26 +198,106 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                 key: _formKey,
                 child: ListView(
                   children: [
+                    // Section 1: Basic Information
+                    _buildSectionHeader('Informations de Base'),
+                    
                     TextFormField(
-                      controller: _matriculeController,
-                      decoration: InputDecoration(labelText: 'Matricule'),
+                      controller: _artNouvCodeController,
+                      decoration: InputDecoration(
+                        labelText: 'Code Article (ArtNouvCode) *',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.qr_code),
+                      ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Veuillez saisir le matricule';
+                          return 'Le code article est obligatoire';
+                        }
+                        if (value.length > 12) {
+                          return 'Le code ne peut pas dépasser 12 caractères';
                         }
                         return null;
                       },
                     ),
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: InputDecoration(labelText: 'Adresse'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez saisir l\'adresse';
-                        }
-                        return null;
-                      },
+                    SizedBox(height: 16),
+
+                    // Section 2: Tax Information
+                    _buildSectionHeader('Informations Fiscales'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artImpController,
+                            decoration: InputDecoration(
+                              labelText: 'Impôt (ArtImp)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.account_balance),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artTauxPresController,
+                            decoration: InputDecoration(
+                              labelText: 'Taux Présumé (ArtTauxPres)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.percent),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                      ],
                     ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artMntTaxeController,
+                            decoration: InputDecoration(
+                              labelText: 'Montant Taxe (ArtMntTaxe)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.euro),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artBaseTaxeController,
+                            decoration: InputDecoration(
+                              labelText: 'Base Taxe (ArtBaseTaxe)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.calculate),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 3: Location Information
+                    _buildSectionHeader('Informations de Localisation'),
+                    
+                    // Google Maps Arrondissement Selector
+                    _buildSectionHeader('Sélection de l\'Arrondissement'),
+                    ArrondissementMapSelector(
+                      selectedArrondissementCode: _selectedArrondissement,
+                      onArrondissementSelected: (code) {
+                        setState(() {
+                          _selectedArrondissement = code;
+                        });
+                      },
+                      height: 300,
+                    ),
+                    SizedBox(height: 16),
+                    
+                    // Traditional dropdown as backup
                     Consumer<ArrondissementProvider>(
                       builder: (context, provider, child) {
                         return ArrondissementDropdown(
@@ -188,114 +310,454 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                         );
                       },
                     ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artRueController,
+                            decoration: InputDecoration(
+                              labelText: 'Rue (ArtRue) *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.streetview),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'La rue est obligatoire';
+                              }
+                              if (value.length > 5) {
+                                return 'Le code rue ne peut pas dépasser 5 caractères';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artTexteAdresseController,
+                            decoration: InputDecoration(
+                              labelText: 'Adresse Complète (ArtTexteAdresse)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_on),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 4: Property Information
+                    _buildSectionHeader('Informations du Bien'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artSurTotController,
+                            decoration: InputDecoration(
+                              labelText: 'Surface Totale (ArtSurTot)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.square_foot),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artSurCouvController,
+                            decoration: InputDecoration(
+                              labelText: 'Surface Couverte (ArtSurCouv)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.home),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artSurContController,
+                            decoration: InputDecoration(
+                              labelText: 'Surface Contrat (ArtSurCont)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.description),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artSurDeclController,
+                            decoration: InputDecoration(
+                              labelText: 'Surface Déclarée (ArtSurDecl)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.assignment),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artPrixRefController,
+                            decoration: InputDecoration(
+                              labelText: 'Prix Référence (ArtPrixRef)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.price_check),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artPrixMetreController,
+                            decoration: InputDecoration(
+                              labelText: 'Prix au M² (ArtPrixMetre)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.attach_money),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 5: Category and Quality
+                    _buildSectionHeader('Catégorie et Qualité'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artCatArtController,
+                            decoration: InputDecoration(
+                              labelText: 'Catégorie Article (ArtCatArt)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.category),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artQualOccupController,
+                            decoration: InputDecoration(
+                              labelText: 'Qualité Occupation (ArtQualOccup)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.star),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 6: Owner and Tenant Information
+                    _buildSectionHeader('Informations Propriétaire et Locataire'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artRedCodeController,
+                            decoration: InputDecoration(
+                              labelText: 'Code Propriétaire (ArtRedCode)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artMondController,
+                            decoration: InputDecoration(
+                              labelText: 'Code Locataire (ArtMond)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artOccupController,
+                            decoration: InputDecoration(
+                              labelText: 'Occupation (ArtOccup)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.business),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artNomCommerceController,
+                            decoration: InputDecoration(
+                              labelText: 'Nom Commerce (ArtNomCommerce)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.store),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 7: Administrative Codes
+                    _buildSectionHeader('Codes Administratifs'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _codeGouvController,
+                            decoration: InputDecoration(
+                              labelText: 'Code Gouvernorat (CodeGouv)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_city),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _codeDelegController,
+                            decoration: InputDecoration(
+                              labelText: 'Code Délégation (CodeDeleg)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_city),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _codeComController,
+                            decoration: InputDecoration(
+                              labelText: 'Code Commune (CodeCom)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_city),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _redTypePrporController,
+                            decoration: InputDecoration(
+                              labelText: 'Type Propriété (RedTypePrpor)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.home_work),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
+                    // Section 8: Contact and Additional Information
+                    _buildSectionHeader('Contact et Informations Supplémentaires'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artTelDeclController,
+                            decoration: InputDecoration(
+                              labelText: 'Téléphone (ArtTelDecl)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.phone),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artEmailDeclController,
+                            decoration: InputDecoration(
+                              labelText: 'Email (ArtEmailDecl)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email),
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+
                     TextFormField(
-                      controller: _superficieController,
-                      decoration: InputDecoration(labelText: 'Superficie (m²)'),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Veuillez saisir la superficie';
-                        }
-                        if (num.tryParse(value) == null) {
-                          return 'Veuillez saisir un nombre valide';
-                        }
-                        return null;
-                      },
+                      controller: _artCommentaireController,
+                      decoration: InputDecoration(
+                        labelText: 'Commentaire (ArtCommentaire)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.comment),
+                      ),
+                      maxLines: 3,
                     ),
-                    DropdownButtonFormField<String>(
-                      value: _selectedCategorie,
-                      decoration: InputDecoration(labelText: 'Categorie'),
-                      items: _categories
-                          .map((cat) => DropdownMenuItem(
-                                value: cat,
-                                child: Text(cat),
-                              ))
-                          .toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedCategorie = val;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a categorie';
-                        }
-                        return null;
-                      },
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artCatActiviteController,
+                            decoration: InputDecoration(
+                              labelText: 'Catégorie Activité (ArtCatActivite)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.work),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artOccupVoieController,
+                            decoration: InputDecoration(
+                              labelText: 'Occupation Voie (ArtOccupVoie)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.directions_car),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                    SwitchListTile(
-                      title: Text('Statut (Open)'),
-                      value: _statut,
-                      onChanged: (val) {
-                        setState(() {
-                          _statut = val;
-                        });
-                      },
+                    SizedBox(height: 16),
+
+                    // Section 9: Status and Coordinates
+                    _buildSectionHeader('Statut et Coordonnées'),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<int>(
+                            value: _artEtat,
+                            decoration: InputDecoration(
+                              labelText: 'État (ArtEtat)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.info),
+                            ),
+                            items: _etatOptions.map((option) {
+                              return DropdownMenuItem<int>(
+                                value: int.parse(option),
+                                child: Text(option == '1' ? 'Actif' : 'Inactif'),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _artEtat = value ?? 1;
+                              });
+                            },
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Container(), // Empty container for spacing
+                        ),
+                      ],
                     ),
-                    TextFormField(
-                      controller: _ownerNameController,
-                      decoration: InputDecoration(labelText: 'Owner Name'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter owner name';
-                        }
-                        return null;
-                      },
+                    SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artLatitudeController,
+                            decoration: InputDecoration(
+                              labelText: 'Latitude (ArtLatitude)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_on),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _artLongitudeController,
+                            decoration: InputDecoration(
+                              labelText: 'Longitude (ArtLongitude)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_on),
+                            ),
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
+                          ),
+                        ),
+                      ],
                     ),
-                    TextFormField(
-                      controller: _ownerCinController,
-                      decoration: InputDecoration(labelText: 'Owner CIN'),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter owner CIN';
-                        }
-                        return null;
-                      },
-                    ),
-                    TextFormField(
-                      controller: _tenantNameController,
-                      decoration: InputDecoration(labelText: 'Tenant Name'),
-                    ),
-                    TextFormField(
-                      controller: _tenantActivityController,
-                      decoration: InputDecoration(labelText: 'Tenant Activity'),
-                    ),
-                    TextFormField(
-                      controller: _latitudeController,
-                      decoration: InputDecoration(labelText: 'Latitude'),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter latitude';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid latitude';
-                        }
-                        return null;
-                      },
-                    ),
-                    TextFormField(
-                      controller: _longitudeController,
-                      decoration: InputDecoration(labelText: 'Longitude'),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter longitude';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Please enter a valid longitude';
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 32),
+
+                    // Submit Button
                     ElevatedButton(
                       onPressed: _submitForm,
-                      child: Text('Submit'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[800],
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Enregistrer l\'Établissement',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue[800],
+        ),
       ),
     );
   }
