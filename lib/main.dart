@@ -34,49 +34,8 @@ class MyApp extends StatelessWidget {
               ),
               useMaterial3: true,
             ),
-            initialRoute: AppRoutes.login,
+            initialRoute: AppRoutes.home,
             onGenerateRoute: AppRoutes.generateRoute,
-            home: FutureBuilder(
-              future: authProvider.initialize(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Scaffold(
-                    body: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text('Initializing TCL App...'),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                
-                // Check if user is authenticated
-                if (authProvider.isAuthenticated) {
-                  // Navigate to appropriate dashboard based on user role
-                  if (authProvider.isAdmin) {
-                    return Navigator(
-                      onGenerateRoute: AppRoutes.generateRoute,
-                      initialRoute: AppRoutes.adminDashboard,
-                    );
-                  } else {
-                    return Navigator(
-                      onGenerateRoute: AppRoutes.generateRoute,
-                      initialRoute: AppRoutes.agentDashboard,
-                    );
-                  }
-                } else {
-                  // Show login screen
-                  return Navigator(
-                    onGenerateRoute: AppRoutes.generateRoute,
-                    initialRoute: AppRoutes.login,
-                  );
-                }
-              },
-            ),
           );
         },
       ),

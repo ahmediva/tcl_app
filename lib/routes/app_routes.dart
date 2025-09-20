@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/home/main_menu.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
@@ -6,9 +7,11 @@ import '../screens/dashboard/admin_dashboard.dart';
 import '../screens/dashboard/agent_dashboard.dart';
 import '../screens/establishment/establishment_form.dart';
 import '../screens/establishment/establishment_list.dart';
+import '../screens/demo/location_picker_demo.dart';
 
 class AppRoutes {
   // Route names
+  static const String home = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -16,10 +19,13 @@ class AppRoutes {
   static const String agentDashboard = '/agent-dashboard';
   static const String establishmentForm = '/establishment-form';
   static const String establishmentList = '/establishment-list';
+  static const String locationPickerDemo = '/location-picker-demo';
 
   // Generate route based on route name
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case home:
+        return MaterialPageRoute(builder: (_) => MainMenu());
       case login:
         return MaterialPageRoute(builder: (_) => LoginScreen());
       case register:
@@ -34,6 +40,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => EstablishmentForm());
       case establishmentList:
         return MaterialPageRoute(builder: (_) => EstablishmentList());
+      case locationPickerDemo:
+        return MaterialPageRoute(builder: (_) => LocationPickerDemo());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

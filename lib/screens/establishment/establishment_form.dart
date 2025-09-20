@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
 import '../../models/etablissement_model.dart';
 import '../../services/database_service.dart';
-import '../../utils/validators.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/arrondissement_provider.dart';
 import '../../widgets/arrondissement_dropdown.dart';
 import '../../widgets/arrondissement_map_selector.dart';
-import 'package:geolocator/geolocator.dart';
+import '../../widgets/location_picker.dart';
 
 class EstablishmentForm extends StatefulWidget {
   @override
@@ -182,6 +179,31 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
     });
   }
 
+  Future<void> _openLocationPicker() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPicker(
+          initialLatitude: _artLatitudeController.text.isNotEmpty 
+              ? double.tryParse(_artLatitudeController.text) 
+              : null,
+          initialLongitude: _artLongitudeController.text.isNotEmpty 
+              ? double.tryParse(_artLongitudeController.text) 
+              : null,
+          address: _artTexteAdresseController.text.isNotEmpty 
+              ? _artTexteAdresseController.text 
+              : null,
+          onLocationSelected: (latitude, longitude) {
+            setState(() {
+              _artLatitudeController.text = latitude.toStringAsFixed(6);
+              _artLongitudeController.text = longitude.toStringAsFixed(6);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -281,37 +303,12 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                     ),
                     SizedBox(height: 16),
 
-                    // Section 3: Location Information
-                    _buildSectionHeader('Informations de Localisation'),
+                
+                    
                     
                     // Google Maps Arrondissement Selector
                     _buildSectionHeader('Sélection de l\'Arrondissement'),
-                    ArrondissementMapSelector(
-                      selectedArrondissementCode: _selectedArrondissement,
-                      onArrondissementSelected: (code) {
-                        setState(() {
-                          _selectedArrondissement = code;
-                        });
-                      },
-                      height: 300,
-                    ),
-                    SizedBox(height: 16),
-                    
-                    // Traditional dropdown as backup
-                    Consumer<ArrondissementProvider>(
-                      builder: (context, provider, child) {
-                        return ArrondissementDropdown(
-                          selectedValue: _selectedArrondissement,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedArrondissement = value;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16),
-
+                  
                     Row(
                       children: [
                         Expanded(
@@ -347,6 +344,22 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                       ],
                     ),
                     SizedBox(height: 16),
+                    Consumer<ArrondissementProvider>(
+                      builder: (context, provider, child) {
+                        return ArrondissementDropdown(
+                          selectedValue: _selectedArrondissement,
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedArrondissement = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    SizedBox(height: 16),
+
+                    
+                    
 
                     // Section 4: Property Information
                     _buildSectionHeader('Informations du Bien'),
@@ -690,6 +703,55 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                     ),
                     SizedBox(height: 16),
 
+                    // Location Picker Section
+                    Container(
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.pink[50],
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.pink[200]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.map, color: Colors.pink[600]),
+                              SizedBox(width: 8),
+                              Text(
+                                'Sélection de l\'emplacement',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.pink[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 12),
+                          Text(
+                            'Utilisez la carte pour sélectionner précisément l\'emplacement de l\'établissement',
+                            style: TextStyle(
+                              color: Colors.pink[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _openLocationPicker,
+                            icon: Icon(Icons.location_on, color: Colors.white),
+                            label: Text('Ouvrir la carte'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.pink[600],
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16),
+
                     Row(
                       children: [
                         Expanded(
@@ -699,6 +761,11 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                               labelText: 'Latitude (ArtLatitude)',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.location_on),
+                              suffixIcon: IconButton(
+                                onPressed: _openLocationPicker,
+                                icon: Icon(Icons.map, color: Colors.pink[600]),
+                                tooltip: 'Sélectionner sur la carte',
+                              ),
                             ),
                             keyboardType: TextInputType.numberWithOptions(decimal: true),
                           ),
@@ -711,6 +778,11 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                               labelText: 'Longitude (ArtLongitude)',
                               border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.location_on),
+                              suffixIcon: IconButton(
+                                onPressed: _openLocationPicker,
+                                icon: Icon(Icons.map, color: Colors.pink[600]),
+                                tooltip: 'Sélectionner sur la carte',
+                              ),
                             ),
                             keyboardType: TextInputType.numberWithOptions(decimal: true),
                           ),

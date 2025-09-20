@@ -64,6 +64,14 @@ class AgentDashboard extends StatelessWidget {
                       // Navigate to notifications screen
                     },
                   ),
+                  ListTile(
+                    leading: Icon(Icons.location_on, color: Colors.pink[600]),
+                    title: Text('Démo Sélection d\'Emplacement'),
+                    subtitle: Text('Tester le sélecteur de localisation avec Google Maps'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/location-picker-demo');
+                    },
+                  ),
                 ],
               ),
             ),
