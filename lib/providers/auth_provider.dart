@@ -7,7 +7,6 @@ class AuthProvider with ChangeNotifier {
   bool _isLoading = false;
 
   TCLUser? get user => _user;
-  TCLUser? get currentUser => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
 

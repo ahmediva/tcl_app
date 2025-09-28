@@ -13,8 +13,9 @@ class EstablishmentForm extends StatefulWidget {
   _EstablishmentFormState createState() => _EstablishmentFormState();
 }
 
-class _EstablishmentFormState extends State<EstablishmentForm> {
+class _EstablishmentFormState extends State<EstablishmentForm> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  late TabController _tabController;
 
   // Controllers for all ARTICLE table fields
   final TextEditingController _artNouvCodeController = TextEditingController();
@@ -59,7 +60,19 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
   final List<String> _artCatActiviteOptions = ['1', '2', '3', '4', '5']; // Activity categories
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 6, vsync: this);
+    // Load arrondissements when the form is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final arrondissementProvider = Provider.of<ArrondissementProvider>(context, listen: false);
+      arrondissementProvider.fetchArrondissementsActifs();
+    });
+  }
+
+  @override
   void dispose() {
+    _tabController.dispose();
     // Dispose all controllers
     _artNouvCodeController.dispose();
     _artImpController.dispose();
@@ -114,7 +127,7 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
       artDateDebImp: null,
       artDateFinImp: null,
       artMntTaxe: double.tryParse(_artMntTaxeController.text.trim()),
-      artAgent: createdBy,
+      artAgentSaisie: createdBy,
       artDateSaisie: DateTime.now(),
       artRedCode: _artRedCodeController.text.trim(),
       artMond: _artMondController.text.trim(),
@@ -169,15 +182,6 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    // Load arrondissements when the form is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arrondissementProvider = Provider.of<ArrondissementProvider>(context, listen: false);
-      arrondissementProvider.fetchArrondissementsActifs();
-    });
-  }
 
   Future<void> _openLocationPicker() async {
     final result = await Navigator.push(
@@ -344,16 +348,12 @@ class _EstablishmentFormState extends State<EstablishmentForm> {
                       ],
                     ),
                     SizedBox(height: 16),
-                    Consumer<ArrondissementProvider>(
-                      builder: (context, provider, child) {
-                        return ArrondissementDropdown(
-                          selectedValue: _selectedArrondissement,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedArrondissement = value;
-                            });
-                          },
-                        );
+                    ArrondissementDropdown(
+                      selectedValue: _selectedArrondissement,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedArrondissement = value;
+                        });
                       },
                     ),
                     SizedBox(height: 16),

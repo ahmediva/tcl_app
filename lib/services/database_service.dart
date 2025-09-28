@@ -35,7 +35,7 @@ class DatabaseService {
 
   Future<bool> updateEtablissement(EtablissementModel etablissement) async {
     try {
-      await _supabase.from('article').update(etablissement.toJson()).eq('art_nouv_code', etablissement.artNouvCode);
+      await _supabase.from('article').update(etablissement.toJson()).eq('ArtNouvCode', etablissement.artNouvCode);
       return true;
     } catch (e) {
       print('Error updating etablissement: $e');
@@ -45,7 +45,7 @@ class DatabaseService {
 
   Future<bool> deleteEtablissement(String artNouvCode) async {
     try {
-      await _supabase.from('article').delete().eq('art_nouv_code', artNouvCode);
+      await _supabase.from('article').delete().eq('ArtNouvCode', artNouvCode);
       return true;
     } catch (e) {
       print('Error deleting etablissement: $e');

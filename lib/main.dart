@@ -4,15 +4,19 @@ import 'config/supabase_config.dart';
 import 'routes/app_routes.dart';
 import 'providers/auth_provider.dart';
 import 'providers/arrondissement_provider.dart';
+import 'providers/establishment_provider.dart';
+import 'widgets/auth/auth_wrapper.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/home/main_menu.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseConfig.initialize();
-  runApp(const MyApp());
+  runApp(const TCLApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class TCLApp extends StatelessWidget {
+  const TCLApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +24,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => ArrondissementProvider()),
+        ChangeNotifierProvider(create: (context) => EstablishmentProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
@@ -34,8 +39,13 @@ class MyApp extends StatelessWidget {
               ),
               useMaterial3: true,
             ),
-            initialRoute: AppRoutes.home,
+            home: AuthWrapper(
+              child: authProvider.isAuthenticated 
+                ? const MainMenu() 
+                : const LoginScreen(),
+            ),
             onGenerateRoute: AppRoutes.generateRoute,
+            debugShowCheckedModeBanner: false,
           );
         },
       ),

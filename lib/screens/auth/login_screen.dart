@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../routes/app_routes.dart';
-import '../../widgets/common/custom_text_field.dart';
-import '../../widgets/common/custom_button.dart';
-import '../../utils/constants.dart';
-import '../../utils/validators.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({Key? key}) : super(key: key);
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -17,7 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _useUsername = false; // Toggle between email and username login
+  bool _useUsername = false;
 
   @override
   void dispose() {
@@ -28,75 +25,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+      if (mounted) {
+        setState(() => _isLoading = true);
+      }
       
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         bool success = false;
         
         if (_useUsername) {
-          // Login with username
-          print('Attempting login with username: ${_emailController.text.trim()}');
           success = await authProvider.loginWithUsername(
             _emailController.text.trim(),
             _passwordController.text,
           );
         } else {
-          // Login with email
-          print('Attempting login with email: ${_emailController.text.trim()}');
           success = await authProvider.login(
             _emailController.text.trim(),
             _passwordController.text,
           );
         }
         
-        if (success) {
-          print('Login successful!');
-          // Navigate to appropriate dashboard based on user role
-          Navigator.pushReplacementNamed(
-            context,
-            AppRoutes.establishmentForm,
-          );
-        } else {
-          print('Login failed');
+        if (success && mounted) {
+          Navigator.pushReplacementNamed(context, '/');
+        } else if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('Login failed. Please check your credentials.'),
               backgroundColor: Colors.red,
             ),
           );
         }
       } catch (e) {
-        print('Login error: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An error occurred: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('An error occurred: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
-  }
-
-  void _toggleLoginMethod() {
-    setState(() {
-      _useUsername = !_useUsername;
-      _emailController.clear();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('TCL Login'),
+        title: const Text('TCL Login'),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -104,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               // App Logo/Title
               Container(
-                padding: EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.blue[50],
                   borderRadius: BorderRadius.circular(15),
@@ -116,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       size: 64,
                       color: Colors.blue[800],
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
                       'TCL Mobile App',
                       style: TextStyle(
@@ -136,24 +121,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
               
               // Login Method Toggle
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Login with: ',
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  const Text('Login with: '),
                   Switch(
                     value: _useUsername,
-                    onChanged: (value) => _toggleLoginMethod(),
+                    onChanged: (value) {
+                      setState(() {
+                        _useUsername = value;
+                        _emailController.clear();
+                      });
+                    },
                   ),
                   Text(
                     _useUsername ? 'Username' : 'Email',
                     style: TextStyle(
-                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue[800],
                     ),
@@ -161,106 +147,89 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               
-              // Login Form
-              CustomTextField(
+              // Email/Username Field
+              TextFormField(
                 controller: _emailController,
-                labelText: _useUsername ? 'Username' : 'Email',
+                decoration: InputDecoration(
+                  labelText: _useUsername ? 'Username' : 'Email',
+                  prefixIcon: Icon(
+                    _useUsername ? Icons.person : Icons.email,
+                    color: Colors.blue[600],
+                  ),
+                  border: const OutlineInputBorder(),
+                ),
                 keyboardType: _useUsername 
                     ? TextInputType.text 
                     : TextInputType.emailAddress,
-                validator: _useUsername 
-                    ? Validators.validateUsername 
-                    : Validators.validateEmail,
-                prefixIcon: Icon(
-                  _useUsername ? Icons.person : Icons.email,
-                  color: Colors.blue[600] ?? Colors.blue,
-                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter ${_useUsername ? 'username' : 'email'}';
+                  }
+                  return null;
+                },
               ),
               
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               
-              CustomTextField(
+              // Password Field
+              TextFormField(
                 controller: _passwordController,
-                labelText: 'Password',
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(),
+                ),
                 obscureText: true,
-                validator: Validators.validatePassword,
-
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter password';
+                  }
+                  return null;
+                },
               ),
               
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               
               // Login Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: CustomButton(
-                  text: _isLoading ? 'Logging in...' : 'Login',
+                child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[800],
+                    foregroundColor: Colors.white,
+                  ),
+                  child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Login', style: TextStyle(fontSize: 16)),
                 ),
               ),
               
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               
               // Additional Options
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/forgot-password');
-                    },
+                    onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
                     child: Text(
                       'Forgot Password?',
-                      style: TextStyle(color: Colors.blue[600] ?? Colors.blue),
+                      style: TextStyle(color: Colors.blue[600]),
                     ),
                   ),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/register');
-                    },
+                    onPressed: () => Navigator.pushNamed(context, '/register'),
                     child: Text(
                       'Register Account',
-                      style: TextStyle(color: Colors.blue[600] ?? Colors.blue),
+                      style: TextStyle(color: Colors.blue[600]),
                     ),
                   ),
                 ],
               ),
-              
-              SizedBox(height: 20),
-              
-              // Debug Info (remove in production)
-              if (true) // Set to false in production
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100] ?? Colors.grey[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300] ?? Colors.grey),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Debug Info:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[700] ?? Colors.grey[600],
-                        ),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Login Method: ${_useUsername ? "Username" : "Email"}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600] ?? Colors.grey),
-                      ),
-                      Text(
-                        'Database: ${_useUsername ? "users.username" : "users.email"}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600] ?? Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
         ),

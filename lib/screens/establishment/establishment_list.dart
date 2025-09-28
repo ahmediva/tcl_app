@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../routes/app_routes.dart';
+import '../../providers/establishment_provider.dart';
+import '../../models/etablissement_model.dart';
 
 class EstablishmentList extends StatefulWidget {
   const EstablishmentList({Key? key}) : super(key: key);
@@ -12,51 +15,37 @@ class _EstablishmentListState extends State<EstablishmentList> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Sample data - in real app, this would come from database
-  final List<Map<String, dynamic>> _establishments = [
-    {
-      'id': '1',
-      'name': 'Restaurant Le Tunisien',
-      'address': 'Avenue Habib Bourguiba, Tunis',
-      'category': 'Restaurant',
-      'status': 'Actif',
-      'latitude': 36.8065,
-      'longitude': 10.1815,
-    },
-    {
-      'id': '2',
-      'name': 'Café Central',
-      'address': 'Place de la République, Tunis',
-      'category': 'Café',
-      'status': 'Actif',
-      'latitude': 36.8000,
-      'longitude': 10.1800,
-    },
-    {
-      'id': '3',
-      'name': 'Boutique Mode',
-      'address': 'Rue de la Liberté, Tunis',
-      'category': 'Commerce',
-      'status': 'Inactif',
-      'latitude': 36.8100,
-      'longitude': 10.1900,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Fetch establishments when the screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<EstablishmentProvider>().fetchEtablissements();
+    });
+  }
 
-  List<Map<String, dynamic>> get _filteredEstablishments {
+  List<EtablissementModel> get _filteredEstablishments {
+    final establishments = context.watch<EstablishmentProvider>().etablissements;
     if (_searchQuery.isEmpty) {
-      return _establishments;
+      return establishments;
     }
-    return _establishments.where((establishment) {
-      return establishment['name'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             establishment['address'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             establishment['category'].toLowerCase().contains(_searchQuery.toLowerCase());
+    return establishments.where((establishment) {
+      final name = establishment.artNomCommerce?.toLowerCase() ?? '';
+      final address = establishment.artTexteAdresse?.toLowerCase() ?? '';
+      final category = establishment.artCatArt?.toLowerCase() ?? '';
+      final searchLower = _searchQuery.toLowerCase();
+      
+      return name.contains(searchLower) ||
+             address.contains(searchLower) ||
+             category.contains(searchLower);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<EstablishmentProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
       appBar: AppBar(
         title: Text('Liste des Établissements'),
         backgroundColor: Colors.blue[800],
@@ -125,16 +114,18 @@ class _EstablishmentListState extends State<EstablishmentList> {
 
           // List
           Expanded(
-            child: _filteredEstablishments.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _filteredEstablishments.length,
-                    itemBuilder: (context, index) {
-                      final establishment = _filteredEstablishments[index];
-                      return _buildEstablishmentCard(establishment);
-                    },
-                  ),
+            child: provider.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _filteredEstablishments.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _filteredEstablishments.length,
+                        itemBuilder: (context, index) {
+                          final establishment = _filteredEstablishments[index];
+                          return _buildEstablishmentCard(establishment);
+                        },
+                      ),
           ),
         ],
       ),
@@ -146,6 +137,8 @@ class _EstablishmentListState extends State<EstablishmentList> {
         child: Icon(Icons.add, color: Colors.white),
         tooltip: 'Ajouter un établissement',
       ),
+        );
+      },
     );
   }
 
@@ -196,7 +189,7 @@ class _EstablishmentListState extends State<EstablishmentList> {
     );
   }
 
-  Widget _buildEstablishmentCard(Map<String, dynamic> establishment) {
+  Widget _buildEstablishmentCard(EtablissementModel establishment) {
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -219,22 +212,22 @@ class _EstablishmentListState extends State<EstablishmentList> {
                     width: 50,
                     height: 50,
                     decoration: BoxDecoration(
-                      color: _getStatusColor(establishment['status']).withOpacity(0.1),
+                      color: _getStatusColor(establishment.artEtat).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      _getCategoryIcon(establishment['category']),
-                      color: _getStatusColor(establishment['status']),
+                      _getCategoryIcon(establishment.artCatArt),
+                      color: _getStatusColor(establishment.artEtat),
                       size: 24,
                     ),
                   ),
                   SizedBox(width: 12),
                   Expanded(
-                    child: Column(
+        child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          establishment['name'],
+          children: [
+            Text(
+                          establishment.artNomCommerce ?? 'Établissement ${establishment.artNouvCode}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -242,7 +235,7 @@ class _EstablishmentListState extends State<EstablishmentList> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          establishment['address'],
+                          establishment.artTexteAdresse ?? 'Adresse non disponible',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -254,13 +247,13 @@ class _EstablishmentListState extends State<EstablishmentList> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(establishment['status']).withOpacity(0.1),
+                      color: _getStatusColor(establishment.artEtat).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      establishment['status'],
+                      _getStatusText(establishment.artEtat),
                       style: TextStyle(
-                        color: _getStatusColor(establishment['status']),
+                        color: _getStatusColor(establishment.artEtat),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -274,7 +267,7 @@ class _EstablishmentListState extends State<EstablishmentList> {
                   Icon(Icons.category, size: 16, color: Colors.grey[500]),
                   SizedBox(width: 4),
                   Text(
-                    establishment['category'],
+                    establishment.artCatArt ?? 'Non spécifié',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -284,7 +277,9 @@ class _EstablishmentListState extends State<EstablishmentList> {
                   Icon(Icons.location_on, size: 16, color: Colors.grey[500]),
                   SizedBox(width: 4),
                   Text(
-                    '${establishment['latitude'].toStringAsFixed(4)}, ${establishment['longitude'].toStringAsFixed(4)}',
+                    establishment.artLatitude != null && establishment.artLongitude != null
+                        ? '${establishment.artLatitude!.toStringAsFixed(4)}, ${establishment.artLongitude!.toStringAsFixed(4)}'
+                        : 'Coordonnées non disponibles',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -299,45 +294,71 @@ class _EstablishmentListState extends State<EstablishmentList> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'actif':
-        return Colors.green;
-      case 'inactif':
-        return Colors.red;
+  Color _getStatusColor(int? artEtat) {
+    if (artEtat == null) return Colors.grey;
+    switch (artEtat) {
+      case 1:
+        return Colors.green; // Actif
+      case 0:
+        return Colors.red; // Inactif
       default:
         return Colors.grey;
     }
   }
 
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
+  String _getStatusText(int? artEtat) {
+    if (artEtat == null) return 'Inconnu';
+    switch (artEtat) {
+      case 1:
+        return 'Actif';
+      case 0:
+        return 'Inactif';
+      default:
+        return 'Inconnu';
+    }
+  }
+
+  IconData _getCategoryIcon(String? artCatArt) {
+    if (artCatArt == null) return Icons.business;
+    switch (artCatArt.toLowerCase()) {
       case 'restaurant':
         return Icons.restaurant;
       case 'café':
+      case 'cafe':
         return Icons.local_cafe;
       case 'commerce':
         return Icons.store;
+      case 'hotel':
+        return Icons.hotel;
+      case 'pharmacie':
+        return Icons.local_pharmacy;
+      case 'banque':
+        return Icons.account_balance;
       default:
         return Icons.business;
     }
   }
 
-  void _showEstablishmentDetails(Map<String, dynamic> establishment) {
+  void _showEstablishmentDetails(EtablissementModel establishment) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(establishment['name']),
+          title: Text(establishment.artNomCommerce ?? 'Établissement ${establishment.artNouvCode}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailRow('Adresse', establishment['address']),
-              _buildDetailRow('Catégorie', establishment['category']),
-              _buildDetailRow('Statut', establishment['status']),
-              _buildDetailRow('Latitude', establishment['latitude'].toString()),
-              _buildDetailRow('Longitude', establishment['longitude'].toString()),
+              _buildDetailRow('Code', establishment.artNouvCode),
+              _buildDetailRow('Adresse', establishment.artTexteAdresse ?? 'Non disponible'),
+              _buildDetailRow('Catégorie', establishment.artCatArt ?? 'Non spécifié'),
+              _buildDetailRow('Statut', _getStatusText(establishment.artEtat)),
+              _buildDetailRow('Arrondissement', establishment.artArrond),
+              _buildDetailRow('Rue', establishment.artRue),
+              if (establishment.artLatitude != null && establishment.artLongitude != null)
+                _buildDetailRow('Coordonnées', '${establishment.artLatitude!.toStringAsFixed(4)}, ${establishment.artLongitude!.toStringAsFixed(4)}'),
+              if (establishment.artMntTaxe != null)
+                _buildDetailRow('Montant Taxe', '${establishment.artMntTaxe!.toStringAsFixed(2)} TND'),
             ],
           ),
           actions: [

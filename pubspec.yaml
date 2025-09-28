@@ -22,7 +22,6 @@ dependencies:
   
   # UI Components
   flutter_svg: ^2.0.9
-  cached_network_image: ^3.3.0
   
   # Form validation
   form_field_validator: ^1.1.0
@@ -34,22 +33,13 @@ dependencies:
   # Utils
   shared_preferences: ^2.2.2
   connectivity_plus: ^5.0.2
-  image_picker: ^1.0.4
-  
-  # Charts (for later)
-  fl_chart: ^0.64.0
-  dio: ^5.9.0
-  flutter_polyline_points: ^3.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-  mockito: ^5.5.0
-  build_runner: ^2.6.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/icons/
