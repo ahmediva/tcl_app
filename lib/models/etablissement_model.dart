@@ -1,4 +1,233 @@
 class EtablissementModel {
+  // Static reference data for dropdowns and display
+  static const List<Map<String, String>> arrondissements = [
+    {"code": "01", "libelle": "01حي البستان_"},
+    {"code": "02", "libelle": "02حي الجنان_"},
+    {"code": "03", "libelle": "03حي المستشفى_"},
+    {"code": "04", "libelle": "04حي القصيبة_"},
+    {"code": "05", "libelle": "05الحي الشرقي_"},
+    {"code": "06", "libelle": "06وسط المدينة_"},
+    {"code": "07", "libelle": "07حي الرياض_"},
+    {"code": "08", "libelle": "08حي الزهور_"},
+    {"code": "09", "libelle": "09حي المرداس_"},
+    {"code": "10", "libelle": "10حي الشاطئ_"},
+    {"code": "11", "libelle": "عين قرنز"},
+    {"code": "12", "libelle": "تقديمـان"},
+    {"code": "13", "libelle": "الذروة"},
+    {"code": "14", "libelle": "عمادة وادي الخطف معتمدية قليبية"},
+    {"code": "15", "libelle": "عمادة قليبية الغربية معتمدية قليبية"},
+    {"code": "16", "libelle": "بني رزين"},
+  ];
+
+  static const List<Map<String, String>> etatOptions = [
+    {"value": "1", "label": "Paye Taxe"},
+    {"value": "0", "label": "Ne Paye Pas"},
+  ];
+
+  static const List<Map<String, String>> redTypePrporOptions = [
+    {"value": "1", "label": "Type 1"},
+    {"value": "2", "label": "Type 2"},
+    {"value": "3", "label": "Type 3"},
+  ];
+
+  static const List<Map<String, String>> artCatActiviteOptions = [
+    {"value": "2", "label": "مطار"},
+    {"value": "3", "label": "بيع مرطبات"},
+    {"value": "4", "label": "بيع الخبز"},
+    {"value": "5", "label": "مخبزة"},
+    {"value": "6", "label": "مطعم"},
+    {"value": "7", "label": "بيع الحليب ومشتقاته"},
+    {"value": "8", "label": "بيع الدجاج والبيض"},
+    {"value": "10", "label": "صنع المرطبات"},
+    {"value": "11", "label": "بيع الزيت"},
+    {"value": "12", "label": "معصرة زيتون"},
+    {"value": "13", "label": "فطائري"},
+    {"value": "14", "label": "معمل مصيرات غذائية"},
+    {"value": "15", "label": "رحي الحبوب والتوابل"},
+    {"value": "16", "label": "بيع الفواكه الجافة"},
+    {"value": "17", "label": "بيع الخضر والغلال"},
+    {"value": "18", "label": "بيع مواد غذائية بالجملة"},
+    {"value": "19", "label": "بيع التوابل"},
+    {"value": "20", "label": "بيع التبغ"},
+    {"value": "21", "label": "مطار"},
+    {"value": "22", "label": "بيع مادة القهوة"},
+    {"value": "23", "label": "مقهى"},
+    {"value": "24", "label": "مدرسة"},
+    {"value": "25", "label": "حانة"},
+    {"value": "26", "label": "مغازة"},
+    {"value": "27", "label": "صيدلية"},
+    {"value": "28", "label": "طبيب عام"},
+    {"value": "29", "label": "طبيب مختص"},
+    {"value": "30", "label": "بيطري"},
+    {"value": "31", "label": "مخبر تحاليل طبية"},
+    {"value": "32", "label": "جزار"},
+    {"value": "33", "label": "اسطبل"},
+    {"value": "34", "label": "تربية الحيوانات"},
+    {"value": "35", "label": "بيع العلف"},
+    {"value": "36", "label": "حداد"},
+    {"value": "37", "label": "بيع مواد حديدية وكهربائية"},
+    {"value": "38", "label": "بيع أجهزة منزلية"},
+    {"value": "39", "label": "مطالة ودهن"},
+    {"value": "40", "label": "بيع مواد فلاحية"},
+    {"value": "41", "label": "تعاونية الخدمات الفلاحية"},
+    {"value": "42", "label": "بيع البلاستيك والمطاط"},
+    {"value": "43", "label": "بيع الأجهزة القديمة"},
+    {"value": "44", "label": "معمل أسلاك كهربائية"},
+    {"value": "45", "label": "بيع دهن ومشتقاته"},
+    {"value": "46", "label": "بيع مواد البناء"},
+    {"value": "47", "label": "ميكانيكي عام"},
+    {"value": "48", "label": "اصلاح الدراجات"},
+    {"value": "49", "label": "ترقيع العجلات"},
+    {"value": "50", "label": "كهرباء السيارات"},
+    {"value": "51", "label": "اصلاح الرادياتور"},
+    {"value": "52", "label": "بيع قطع غيار السيارات"},
+    {"value": "53", "label": "بيع قطع غيار الدراجات"},
+    {"value": "54", "label": "محطة لغسل السيارات"},
+    {"value": "55", "label": "تغليف الكراسي"},
+    {"value": "56", "label": "اصلاح وبيع الساعات"},
+    {"value": "57", "label": "اصلاح الراديو والتلفزة"},
+    {"value": "58", "label": "بيع وإصلاح قطع غيار الالكترونيك"},
+    {"value": "59", "label": "نقل على الكعب"},
+    {"value": "60", "label": "بيع الأحذية"},
+    {"value": "61", "label": "اصلاح الأحذية"},
+    {"value": "62", "label": "صنع الأحذية"},
+    {"value": "63", "label": "صناعة جلدية مشتقة"},
+    {"value": "64", "label": "تارزي"},
+    {"value": "65", "label": "معمل خياطة"},
+    {"value": "66", "label": "بيع الأقمشة"},
+    {"value": "67", "label": "معمل جوارب"},
+    {"value": "68", "label": "بيع الملابس"},
+    {"value": "69", "label": "حياكة الصوف"},
+    {"value": "70", "label": "بيع الصوف"},
+    {"value": "71", "label": "بيع الملابس القديمة"},
+    {"value": "72", "label": "بيع الملابس الجاهزة"},
+    {"value": "73", "label": "تنظيف بالفاتح"},
+    {"value": "74", "label": "بيع مواد التنظيف"},
+    {"value": "75", "label": "بيع العطورات"},
+    {"value": "76", "label": "كاتب عمومي"},
+    {"value": "77", "label": "عدل منفذ"},
+    {"value": "78", "label": "عدل إشهاد"},
+    {"value": "79", "label": "محامي"},
+    {"value": "80", "label": "نيابة تأمين"},
+    {"value": "81", "label": "إدارة"},
+    {"value": "82", "label": "روضة أطفال"},
+    {"value": "83", "label": "بيع أدوات مدرسية"},
+    {"value": "84", "label": "مدرسة تعليم السياقة"},
+    {"value": "85", "label": "معهد خاص"},
+    {"value": "86", "label": "حضانة"},
+    {"value": "87", "label": "مكتب دراسات"},
+    {"value": "88", "label": "وكالة أسفار"},
+    {"value": "89", "label": "بيع الأكلة الخفيفة"},
+    {"value": "90", "label": "بنك"},
+    {"value": "91", "label": "قاعة سينما"},
+    {"value": "92", "label": "مركز عمومي للاتصالات"},
+    {"value": "93", "label": "حمام"},
+    {"value": "94", "label": "حلاق"},
+    {"value": "95", "label": "مصاغة"},
+    {"value": "96", "label": "إصلاح وصنع المفاتيح"},
+    {"value": "97", "label": "بيع أشرطة سمعية"},
+    {"value": "98", "label": "بيع وكراء أشرطة فيديو"},
+    {"value": "99", "label": "مصور"},
+    {"value": "100", "label": "نجار"},
+    {"value": "1000", "label": "نزل"},
+    {"value": "101", "label": "بيع الخشب ومشتقاته"},
+    {"value": "102", "label": "قاعة عرض تجارة"},
+    {"value": "103", "label": "بيع وتركيب البلور"},
+    {"value": "104", "label": "تجارة الأليمينيوم"},
+    {"value": "105", "label": "صنع الموزييك"},
+    {"value": "106", "label": "صنع قوالب الجبس"},
+    {"value": "107", "label": "بيع الفحم والغاز"},
+    {"value": "108", "label": "اصلاح موافيد النفط"},
+    {"value": "109", "label": "إصلاح الثلاجات"},
+    {"value": "110", "label": "بيع المحروقات"},
+    {"value": "111", "label": "محطة بنزين"},
+    {"value": "112", "label": "بيع الغاز"},
+    {"value": "113", "label": "مخزن"},
+    {"value": "114", "label": "بيع الفخار"},
+    {"value": "115", "label": "بيع السمك"},
+    {"value": "116", "label": "بيع وإصلاح الساعات"},
+    {"value": "117", "label": "حلاقة"},
+    {"value": "118", "label": "Plombier"},
+    {"value": "119", "label": "الرخام المركب"},
+    {"value": "120", "label": "معمل فاروز - درويو"},
+    {"value": "121", "label": "بيع الحراري"},
+    {"value": "122", "label": "كراء لوازم الافراح"},
+    {"value": "123", "label": "تاجر"},
+    {"value": "124", "label": "مسجد"},
+    {"value": "125", "label": "مخبر أسنان"},
+    {"value": "126", "label": "قاعة العاب"},
+    {"value": "127", "label": "Mercerie"},
+    {"value": "128", "label": "مكتب عمدة"},
+    {"value": "129", "label": "اصلاح آلات الخياطة"},
+    {"value": "130", "label": "تعمير قوارير الإطفاء"},
+    {"value": "131", "label": "تزويق"},
+    {"value": "132", "label": "محل تمريض"},
+    {"value": "133", "label": "حطاب"},
+    {"value": "134", "label": "Supermarché"},
+    {"value": "135", "label": "Faux- Bijoux"},
+    {"value": "136", "label": "بيع النظارات"},
+    {"value": "137", "label": "Electrique"},
+    {"value": "138", "label": "TOURNEUR"},
+    {"value": "139", "label": "بيع الحديد"},
+    {"value": "140", "label": "قاعة عرض حدادة"},
+    {"value": "141", "label": "صنع الفورية"},
+    {"value": "142", "label": "خراطة"},
+    {"value": "143", "label": "قاعة أفراح"},
+    {"value": "144", "label": "بيع آلات الخياطة"},
+    {"value": "145", "label": "مغازة"},
+    {"value": "146", "label": "مطبعة وراقة"},
+    {"value": "147", "label": "بيع الملابس والمحافظ الجلدية"},
+    {"value": "148", "label": "قاعة عرض"},
+    {"value": "149", "label": "صنع الكراسي"},
+    {"value": "150", "label": "قاعة رياضية"},
+    {"value": "151", "label": "صقل الرخام"},
+    {"value": "152", "label": "مخبر صور"},
+    {"value": "153", "label": "مهندس معماري"},
+    {"value": "154", "label": "اصلاح وبيع البرابول"},
+    {"value": "155", "label": "مدرسة خاصة"},
+    {"value": "156", "label": "بيع مواد شبه طبية"},
+    {"value": "157", "label": "بيع الموالح"},
+    {"value": "158", "label": "قاعة إعلامية موجهة للطفل"},
+    {"value": "159", "label": "مركز تبريد"},
+    {"value": "176", "label": "بيع العمل"},
+    {"value": "177", "label": "بيع وتصليح الهاتف الجوال"},
+    {"value": "178", "label": "بيع وتصليح الآلات الموسيقية"},
+    {"value": "179", "label": "صناعات تقليدية"},
+    {"value": "180", "label": "خدمات إعلامية"},
+    {"value": "181", "label": "مكتب حسابات"},
+    {"value": "182", "label": "نساج"},
+    {"value": "183", "label": "مدرسة ابتدائية"},
+    {"value": "184", "label": "TATOUAGE"},
+    {"value": "185", "label": "معمل بلاستيك"},
+    {"value": "186", "label": "دهن الموبيليا"},
+    {"value": "187", "label": "وكالة عقارية"},
+    {"value": "188", "label": "مرسم محلف"},
+    {"value": "189", "label": "كراء السيارات"},
+    {"value": "190", "label": "بيع الزهور"},
+    {"value": "191", "label": "حزاب سياسي"},
+    {"value": "192", "label": "علاج طبيعي"},
+    {"value": "193", "label": "بيع وإصلاح الحاسوب"},
+    {"value": "194", "label": "مركب ترفيهي"},
+    {"value": "195", "label": "وكالة إشهار"},
+    {"value": "196", "label": "مدرسة خاصة"},
+    {"value": "197", "label": "FRIGO"},
+    {"value": "2000", "label": "محل شامل"},
+    {"value": "2001", "label": "مدرسة تجميل"},
+    {"value": "2002", "label": "خياطة الستائر"},
+    {"value": "2003", "label": "بيع اللحوم"},
+    {"value": "2004", "label": "بيع مواد التجميل"},
+    {"value": "2005", "label": "بيع الطاقة الشمسية"},
+    {"value": "2006", "label": "مركز الكفاءة للغات والإعلامية"},
+    {"value": "2007", "label": "بيع مواد كهربائية"},
+    {"value": "2008", "label": "التضامن الاجتماعي"},
+    {"value": "2009", "label": "تصبير وتصدير السمك"},
+    {"value": "2010", "label": "ديوان الحبوب"},
+    {"value": "2011", "label": "معمل طماطم"},
+    {"value": "2012", "label": "الدعم في مجال التعليم"},
+    {"value": "2013", "label": "بيع المثلجات"},
+    {"value": "2014", "label": "بيع المواد الغذائية والمطعم"},
+  ];
+
   // Primary fields
   final String artNouvCode;
   final int? artDebPer;
@@ -480,6 +709,71 @@ class EtablissementModel {
       } catch (e) {
         return null;
       }
+    }
+    return null;
+  }
+
+  // Helper methods for display
+  String get displayArrondissement {
+    final arrondissement = arrondissements.firstWhere(
+      (a) => a["code"] == artArrond,
+      orElse: () => {"code": artArrond, "libelle": artArrond},
+    );
+    return arrondissement["libelle"] ?? artArrond;
+  }
+
+  String get displayEtat {
+    final etat = etatOptions.firstWhere(
+      (e) => e["value"] == artEtat.toString(),
+      orElse: () => {"value": artEtat.toString(), "label": artEtat.toString()},
+    );
+    return etat["label"] ?? artEtat.toString();
+  }
+
+  String get displayRedTypePrpor {
+    if (redTypePrpor == null) return "Non défini";
+    final type = redTypePrporOptions.firstWhere(
+      (t) => t["value"] == redTypePrpor.toString(),
+      orElse: () => {"value": redTypePrpor.toString(), "label": redTypePrpor.toString()},
+    );
+    return type["label"] ?? redTypePrpor.toString();
+  }
+
+  String get displayCatActivite {
+    if (artCatActivite == null) return "Non défini";
+    final categorie = artCatActiviteOptions.firstWhere(
+      (c) => c["value"] == artCatActivite.toString(),
+      orElse: () => {"value": artCatActivite.toString(), "label": artCatActivite.toString()},
+    );
+    return categorie["label"] ?? artCatActivite.toString();
+  }
+
+  String get displayImposable {
+    return artImp == 1 ? "Oui" : "Non";
+  }
+
+  String get displayOccupVoie {
+    return artOccupVoie == 1 ? "Oui" : "Non";
+  }
+
+  String get fullAddress {
+    final parts = <String>[];
+    if (artRue.isNotEmpty) parts.add(artRue);
+    if (artTexteAdresse != null && artTexteAdresse!.isNotEmpty) {
+      parts.add(artTexteAdresse!);
+    }
+    parts.add(displayArrondissement);
+    return parts.join(", ");
+  }
+
+  bool get hasCoordinates => artLatitude != null && artLongitude != null;
+
+  Map<String, double>? get coordinates {
+    if (hasCoordinates) {
+      return {
+        'latitude': artLatitude!,
+        'longitude': artLongitude!,
+      };
     }
     return null;
   }

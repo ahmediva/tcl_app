@@ -1,9 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:provider/provider.dart';
-import '../models/arrondissement_model.dart';
-import '../providers/arrondissement_provider.dart';
+import '../models/etablissement_model.dart';
 import '../config/google_maps_config.dart';
 
 class ArrondissementMapSelector extends StatefulWidget {
@@ -27,7 +25,6 @@ class ArrondissementMapSelector extends StatefulWidget {
 class _ArrondissementMapSelectorState extends State<ArrondissementMapSelector> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
-  Set<Polygon> _polygons = {};
   bool _isMapInitialized = false;
   
   // Default coordinates for Tunisia (you can adjust these)
@@ -37,61 +34,29 @@ class _ArrondissementMapSelectorState extends State<ArrondissementMapSelector> {
   @override
   void initState() {
     super.initState();
-    _loadArrondissements();
-  }
-
-  Future<void> _loadArrondissements() async {
-    final provider = Provider.of<ArrondissementProvider>(context, listen: false);
-    await provider.fetchArrondissementsActifs();
     _updateMapData();
   }
 
   void _updateMapData() {
-    final provider = Provider.of<ArrondissementProvider>(context, listen: false);
-    final arrondissements = provider.arrondissements;
-    
     _markers.clear();
-    _polygons.clear();
 
-    for (final arrondissement in arrondissements) {
-      if (arrondissement.hasCoordinates) {
-        // Add marker for arrondissement center
-        _markers.add(
-          Marker(
-            markerId: MarkerId(arrondissement.code),
-            position: LatLng(
-              arrondissement.centerLatitude!,
-              arrondissement.centerLongitude!,
-            ),
-            infoWindow: InfoWindow(
-              title: arrondissement.libelle,
-              snippet: 'Code: ${arrondissement.code}',
-            ),
-            onTap: () => _selectArrondissement(arrondissement.code),
+    // Add markers for each arrondissement (using static data)
+    for (final arrondissement in EtablissementModel.arrondissements) {
+      // For now, we'll use default coordinates for each arrondissement
+      // In a real app, you'd have actual coordinates for each arrondissement
+      final latLng = _getArrondissementCoordinates(arrondissement['code']!);
+      
+      _markers.add(
+        Marker(
+          markerId: MarkerId(arrondissement['code']!),
+          position: latLng,
+          infoWindow: InfoWindow(
+            title: arrondissement['libelle'],
+            snippet: 'Code: ${arrondissement['code']}',
           ),
-        );
-
-        // Add polygon for arrondissement boundaries if available
-        if (arrondissement.hasBoundaries) {
-          final points = arrondissement.boundaryCoordinates!
-              .map((coord) => LatLng(coord['latitude']!, coord['longitude']!))
-              .toList();
-          
-          _polygons.add(
-            Polygon(
-              polygonId: PolygonId(arrondissement.code),
-              points: points,
-              strokeWidth: 2,
-              strokeColor: widget.selectedArrondissementCode == arrondissement.code
-                  ? Colors.blue
-                  : Colors.grey,
-              fillColor: widget.selectedArrondissementCode == arrondissement.code
-                  ? Colors.blue.withOpacity(0.2)
-                  : Colors.grey.withOpacity(0.1),
-            ),
-          );
-        }
-      }
+          onTap: () => _selectArrondissement(arrondissement['code']!),
+        ),
+      );
     }
 
     if (mounted) {
@@ -99,10 +64,35 @@ class _ArrondissementMapSelectorState extends State<ArrondissementMapSelector> {
     }
   }
 
+  // Get coordinates for each arrondissement (you can customize these)
+  LatLng _getArrondissementCoordinates(String code) {
+    // Default coordinates for different arrondissements
+    // You can customize these based on actual locations
+    switch (code) {
+      case '01': return LatLng(36.8065, 10.1815);
+      case '02': return LatLng(36.8165, 10.1915);
+      case '03': return LatLng(36.8265, 10.2015);
+      case '04': return LatLng(36.8365, 10.2115);
+      case '05': return LatLng(36.8465, 10.2215);
+      case '06': return LatLng(36.8565, 10.2315);
+      case '07': return LatLng(36.8665, 10.2415);
+      case '08': return LatLng(36.8765, 10.2515);
+      case '09': return LatLng(36.8865, 10.2615);
+      case '10': return LatLng(36.8965, 10.2715);
+      case '11': return LatLng(36.9065, 10.2815);
+      case '12': return LatLng(36.9165, 10.2915);
+      case '13': return LatLng(36.9265, 10.3015);
+      case '14': return LatLng(36.9365, 10.3115);
+      case '15': return LatLng(36.9465, 10.3215);
+      case '16': return LatLng(36.9565, 10.3315);
+      default: return _defaultCenter;
+    }
+  }
+
   void _selectArrondissement(String code) {
     widget.onArrondissementSelected(code);
     setState(() {
-      _updateMapData(); // Refresh to update polygon colors
+      _updateMapData(); // Refresh to update marker colors
     });
   }
 
@@ -113,219 +103,179 @@ class _ArrondissementMapSelectorState extends State<ArrondissementMapSelector> {
       return _buildFallbackWidget(context);
     }
 
-    return Consumer<ArrondissementProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading) {
-          return Container(
-            height: widget.height,
-            width: widget.width,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (provider.error != null) {
-          return Container(
-            height: widget.height,
-            width: widget.width,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 48),
-                  SizedBox(height: 8),
-                  Text('Erreur: ${provider.error}'),
-                  ElevatedButton(
-                    onPressed: () => _loadArrondissements(),
-                    child: Text('Réessayer'),
-                  ),
-                ],
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with instructions
+        Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue[50],
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
             ),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with instructions
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.map, color: Colors.blue[700]),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Sélectionnez un arrondissement sur la carte',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.map, color: Colors.blue[700]),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Sélectionnez un arrondissement sur la carte',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
-                      ),
+            ],
+          ),
+        ),
+        
+        // Google Map
+        Container(
+          height: widget.height,
+          width: widget.width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(8),
+              bottomRight: Radius.circular(8),
+            ),
+            child: Builder(
+              builder: (context) {
+                try {
+                  return GoogleMap(
+                    onMapCreated: (GoogleMapController controller) {
+                      _mapController = controller;
+                      _isMapInitialized = true;
+                      _updateMapData();
+                    },
+                    initialCameraPosition: CameraPosition(
+                      target: _defaultCenter,
+                      zoom: _defaultZoom,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Google Map
-            Container(
-              height: widget.height,
-              width: widget.width,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(8),
-                  bottomRight: Radius.circular(8),
-                ),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(8),
-                  bottomRight: Radius.circular(8),
-                ),
-                child: Builder(
-                  builder: (context) {
-                    try {
-                      return GoogleMap(
-                        onMapCreated: (GoogleMapController controller) {
-                          _mapController = controller;
-                          _isMapInitialized = true;
-                          _updateMapData();
-                        },
-                        initialCameraPosition: CameraPosition(
-                          target: _defaultCenter,
-                          zoom: _defaultZoom,
-                        ),
-                        markers: _markers,
-                        polygons: _polygons,
-                        onTap: (LatLng position) {
-                          // Find the closest arrondissement to the tapped position
-                          _findClosestArrondissement(position);
-                        },
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
-                        zoomControlsEnabled: true,
-                        mapToolbarEnabled: true,
-                      );
-                    } catch (e) {
-                      return Container(
-                        color: Colors.red[50],
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error, color: Colors.red, size: 48),
-                              SizedBox(height: 8),
-                              Text(
-                                'Erreur Google Maps',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red[700],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Vérifiez votre configuration',
-                                style: TextStyle(color: Colors.red[700]),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
-            
-            // Selected arrondissement info
-            if (widget.selectedArrondissementCode != null) ...[
-              SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green[700]),
-                    SizedBox(width: 8),
-                    Expanded(
+                    markers: _markers,
+                    onTap: (LatLng position) {
+                      // Find the closest arrondissement to the tapped position
+                      _findClosestArrondissement(position);
+                    },
+                    myLocationEnabled: true,
+                    myLocationButtonEnabled: true,
+                    zoomControlsEnabled: true,
+                    mapToolbarEnabled: true,
+                  );
+                } catch (e) {
+                  return Container(
+                    color: Colors.red[50],
+                    child: Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          Icon(Icons.error, color: Colors.red, size: 48),
+                          SizedBox(height: 8),
                           Text(
-                            'Arrondissement sélectionné:',
+                            'Erreur Google Maps',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.green[700],
+                              color: Colors.red[700],
                             ),
                           ),
+                          SizedBox(height: 8),
                           Text(
-                            provider.getArrondissementByCode(widget.selectedArrondissementCode!)?.libelle ?? 'Inconnu',
-                            style: TextStyle(color: Colors.green[700]),
+                            'Vérifiez votre configuration',
+                            style: TextStyle(color: Colors.red[700]),
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => widget.onArrondissementSelected(''),
-                      icon: Icon(Icons.clear, color: Colors.green[700]),
-                      tooltip: 'Désélectionner',
-                    ),
-                  ],
+                  );
+                }
+              },
+            ),
+          ),
+        ),
+        
+        // Selected arrondissement info
+        if (widget.selectedArrondissementCode != null) ...[
+          SizedBox(height: 12),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green[200]!),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green[700]),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Arrondissement sélectionné:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[700],
+                        ),
+                      ),
+                      Text(
+                        EtablissementModel.arrondissements
+                            .firstWhere((a) => a['code'] == widget.selectedArrondissementCode)['libelle'] ?? 'Inconnu',
+                        style: TextStyle(color: Colors.green[700]),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ],
-        );
-      },
+                IconButton(
+                  onPressed: () => widget.onArrondissementSelected(''),
+                  icon: Icon(Icons.clear, color: Colors.green[700]),
+                  tooltip: 'Désélectionner',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
   void _findClosestArrondissement(LatLng position) {
-    final provider = Provider.of<ArrondissementProvider>(context, listen: false);
-    final arrondissements = provider.arrondissements.where((a) => a.hasCoordinates).toList();
-    
-    if (arrondissements.isEmpty) return;
-
-    // Find the closest arrondissement based on distance
-    ArrondissementModel closest = arrondissements.first;
+    String closestCode = EtablissementModel.arrondissements.first['code']!;
     double minDistance = double.infinity;
 
-    for (final arrondissement in arrondissements) {
+    for (final arrondissement in EtablissementModel.arrondissements) {
+      final arrondissementLatLng = _getArrondissementCoordinates(arrondissement['code']!);
       final distance = _calculateDistance(
         position.latitude,
         position.longitude,
-        arrondissement.centerLatitude!,
-        arrondissement.centerLongitude!,
+        arrondissementLatLng.latitude,
+        arrondissementLatLng.longitude,
       );
       
       if (distance < minDistance) {
         minDistance = distance;
-        closest = arrondissement;
+        closestCode = arrondissement['code']!;
       }
     }
 
     // Select the closest arrondissement
-    _selectArrondissement(closest.code);
+    _selectArrondissement(closestCode);
     
     // Animate camera to the selected arrondissement
     if (_mapController != null && _isMapInitialized) {
+      final closestLatLng = _getArrondissementCoordinates(closestCode);
       _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(closest.centerLatitude!, closest.centerLongitude!),
-          closest.zoomLevel ?? 12.0,
-        ),
+        CameraUpdate.newLatLngZoom(closestLatLng, 12.0),
       );
     }
   }

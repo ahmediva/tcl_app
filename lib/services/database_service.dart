@@ -1,22 +1,77 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../models/etablissement_model.dart';
-import '../models/arrondissement_model.dart';
-import '../models/commune_model.dart';
-import '../models/categorie_tcl_model.dart';
-import '../models/delegation_model.dart';
 
 class DatabaseService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
+  // Test database connection with better error handling
+  Future<void> testConnection() async {
+    try {
+      print('🔗 Testing Supabase connection...');
+      print('🔑 Using URL: ${SupabaseConfig.supabaseUrl}');
+      print('🔑 Using Key: ${SupabaseConfig.supabaseKey.substring(0, 20)}...');
+      
+      // Test 1: Try to get any data from article table
+      print('🧪 Test 1: Basic select query...');
+      final response = await _supabase.from('article').select('ArtNouvCode').limit(1);
+      print('✅ Test 1 successful! Response: $response');
+      
+      // Test 2: Try to get total count
+      print('🧪 Test 2: Count all records...');
+      final countResponse = await _supabase.from('article').select('ArtNouvCode');
+      print('✅ Test 2 successful! Total records: ${countResponse.length}');
+      
+      // Test 3: Try to get specific fields
+      print('🧪 Test 3: Select specific fields...');
+      final fieldsResponse = await _supabase.from('article').select('ArtNouvCode, ArtNomCommerce, ArtRue').limit(3);
+      print('✅ Test 3 successful! Fields response: $fieldsResponse');
+      
+    } catch (e) {
+      print('❌ Connection failed: $e');
+      print('🔍 Error details: ${e.toString()}');
+      
+      // Try to get more specific error information
+      if (e.toString().contains('RLS') || e.toString().contains('policy')) {
+        print('🚨 Row Level Security (RLS) issue detected!');
+        print('💡 The article table may not allow anonymous access');
+        print('🔧 Solution: Add RLS policy for anonymous users');
+      } else if (e.toString().contains('permission') || e.toString().contains('denied')) {
+        print('🚨 Permission denied!');
+        print('💡 Check your Supabase key permissions');
+      }
+    }
+  }
+
   // Etablissement operations
   Future<List<EtablissementModel>> getEtablissements() async {
     try {
+      print('🔍 Fetching etablissements from Supabase...');
       final data = await _supabase.from('article').select();
-      return data.map((json) => EtablissementModel.fromJson(json)).toList();
+      print('📊 Raw data received: ${data.length} records');
+      if (data.isNotEmpty) {
+        print('📋 First record sample: ${data.first}');
+      }
+      final etablissements = data.map((json) => EtablissementModel.fromJson(json)).toList();
+      print('✅ Successfully converted ${etablissements.length} etablissements');
+      return etablissements;
     } catch (e) {
-      print('Error fetching etablissements: $e');
+      print('❌ Error fetching etablissements: $e');
       return [];
+    }
+  }
+
+  Future<EtablissementModel?> getEtablissementByCode(String artNouvCode) async {
+    try {
+      final data = await _supabase
+          .from('article')
+          .select()
+          .eq('ArtNouvCode', artNouvCode)
+          .single();
+      return EtablissementModel.fromJson(data);
+    } catch (e) {
+      print('Error fetching etablissement by code: $e');
+      return null;
     }
   }
 
@@ -53,269 +108,101 @@ class DatabaseService {
     }
   }
 
-  // Arrondissement operations
-  Future<List<ArrondissementModel>> getArrondissements() async {
-    try {
-      final data = await _supabase.from('arrondissement').select().order('libelle');
-      return data.map((json) => ArrondissementModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching arrondissements: $e');
-      return [];
-    }
-  }
-
-  Future<List<ArrondissementModel>> getArrondissementsActifs() async {
+  // Additional Etablissement operations for better functionality
+  Future<List<EtablissementModel>> getEtablissementsByArrondissement(String arrondissementCode) async {
     try {
       final data = await _supabase
-          .from('arrondissement')
+          .from('article')
           .select()
-          .eq('code_etat', 'A')
-          .order('libelle');
-      return data.map((json) => ArrondissementModel.fromJson(json)).toList();
+          .eq('ArtArrond', arrondissementCode);
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching active arrondissements: $e');
+      print('Error fetching etablissements by arrondissement: $e');
       return [];
     }
   }
 
-  Future<ArrondissementModel?> getArrondissementByCode(String code) async {
+  Future<List<EtablissementModel>> searchEtablissements(String query) async {
     try {
       final data = await _supabase
-          .from('arrondissement')
+          .from('article')
           .select()
-          .eq('code', code)
-          .single();
-      return ArrondissementModel.fromJson(data);
+          .or('ArtRue.ilike.%$query%,ArtNomCommerce.ilike.%$query%,ArtOccup.ilike.%$query%');
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching arrondissement by code: $e');
-      return null;
-    }
-  }
-
-  Future<ArrondissementModel?> addArrondissement(ArrondissementModel arrondissement) async {
-    try {
-      final data = await _supabase
-          .from('arrondissement')
-          .insert(arrondissement.toJson())
-          .select();
-      if (data.isNotEmpty) {
-        return ArrondissementModel.fromJson(data.first);
-      }
-    } catch (e) {
-      print('Error adding arrondissement: $e');
-    }
-    return null;
-  }
-
-  Future<bool> updateArrondissement(ArrondissementModel arrondissement) async {
-    try {
-      await _supabase
-          .from('arrondissement')
-          .update(arrondissement.toJson())
-          .eq('code', arrondissement.code);
-      return true;
-    } catch (e) {
-      print('Error updating arrondissement: $e');
-      return false;
-    }
-  }
-
-  Future<bool> deleteArrondissement(String code) async {
-    try {
-      await _supabase.from('arrondissement').delete().eq('code', code);
-      return true;
-    } catch (e) {
-      print('Error deleting arrondissement: $e');
-      return false;
-    }
-  }
-
-  // Commune operations
-  Future<List<CommuneModel>> getCommunes() async {
-    try {
-      final data = await _supabase.from('commune').select().order('libelle');
-      return data.map((json) => CommuneModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching communes: $e');
+      print('Error searching etablissements: $e');
       return [];
     }
   }
 
-  Future<CommuneModel?> getCommuneByCode(String codeM) async {
+  Future<List<EtablissementModel>> getEtablissementsWithCoordinates() async {
     try {
       final data = await _supabase
-          .from('commune')
+          .from('article')
           .select()
-          .eq('code_m', codeM)
-          .single();
-      return CommuneModel.fromJson(data);
+          .not('ArtLatitude', 'is', null)
+          .not('ArtLongitude', 'is', null);
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching commune by code: $e');
-      return null;
-    }
-  }
-
-  Future<CommuneModel?> addCommune(CommuneModel commune) async {
-    try {
-      final data = await _supabase
-          .from('commune')
-          .insert(commune.toJson())
-          .select();
-      if (data.isNotEmpty) {
-        return CommuneModel.fromJson(data.first);
-      }
-    } catch (e) {
-      print('Error adding commune: $e');
-    }
-    return null;
-  }
-
-  Future<bool> updateCommune(CommuneModel commune) async {
-    try {
-      await _supabase
-          .from('commune')
-          .update(commune.toJson())
-          .eq('code_m', commune.codeM);
-      return true;
-    } catch (e) {
-      print('Error updating commune: $e');
-      return false;
-    }
-  }
-
-  Future<bool> deleteCommune(String codeM) async {
-    try {
-      await _supabase.from('commune').delete().eq('code_m', codeM);
-      return true;
-    } catch (e) {
-      print('Error deleting commune: $e');
-      return false;
-    }
-  }
-
-  // CategorieTCL operations
-  Future<List<CategorieTclModel>> getCategoriesTcl() async {
-    try {
-      final data = await _supabase.from('categorietcl').select().order('numero');
-      return data.map((json) => CategorieTclModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching categories TCL: $e');
+      print('Error fetching etablissements with coordinates: $e');
       return [];
     }
   }
 
-  Future<List<CategorieTclModel>> getCategoriesTclActives() async {
+  Future<List<EtablissementModel>> getEtablissementsByEtat(int etat) async {
     try {
       final data = await _supabase
-          .from('categorietcl')
+          .from('article')
           .select()
-          .eq('cat_etat', 'A')
-          .order('numero');
-      return data.map((json) => CategorieTclModel.fromJson(json)).toList();
+          .eq('ArtEtat', etat);
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching active categories TCL: $e');
+      print('Error fetching etablissements by etat: $e');
       return [];
     }
   }
 
-  Future<CategorieTclModel?> getCategorieTclByNumero(int numero) async {
+  Future<List<EtablissementModel>> getEtablissementsByImposable(int imposable) async {
     try {
       final data = await _supabase
-          .from('categorietcl')
+          .from('article')
           .select()
-          .eq('numero', numero)
-          .single();
-      return CategorieTclModel.fromJson(data);
+          .eq('ArtImp', imposable);
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching categorie TCL by numero: $e');
-      return null;
-    }
-  }
-
-  Future<CategorieTclModel?> addCategorieTcl(CategorieTclModel categorie) async {
-    try {
-      final data = await _supabase
-          .from('categorietcl')
-          .insert(categorie.toJson())
-          .select();
-      if (data.isNotEmpty) {
-        return CategorieTclModel.fromJson(data.first);
-      }
-    } catch (e) {
-      print('Error adding categorie TCL: $e');
-    }
-    return null;
-  }
-
-  Future<bool> updateCategorieTcl(CategorieTclModel categorie) async {
-    try {
-      await _supabase
-          .from('categorietcl')
-          .update(categorie.toJson())
-          .eq('numero', categorie.numero);
-      return true;
-    } catch (e) {
-      print('Error updating categorie TCL: $e');
-      return false;
-    }
-  }
-
-  Future<bool> deleteCategorieTcl(int numero) async {
-    try {
-      await _supabase.from('categorietcl').delete().eq('numero', numero);
-      return true;
-    } catch (e) {
-      print('Error deleting categorie TCL: $e');
-      return false;
-    }
-  }
-
-  // Delegation operations
-  Future<List<DelegationModel>> getDelegations() async {
-    try {
-      final data = await _supabase.from('delegation').select().order('LibelleFr');
-      return data.map((json) => DelegationModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching delegations: $e');
+      print('Error fetching etablissements by imposable: $e');
       return [];
     }
   }
 
-  Future<DelegationModel?> addDelegation(DelegationModel delegation) async {
+  // Statistics and analytics
+  Future<Map<String, dynamic>> getEtablissementStats() async {
     try {
-      final data = await _supabase
-          .from('delegation')
-          .insert(delegation.toJson())
-          .select();
-      if (data.isNotEmpty) {
-        return DelegationModel.fromJson(data.first);
-      }
-    } catch (e) {
-      print('Error adding delegation: $e');
-    }
-    return null;
-  }
+      final total = await _supabase.from('article').select('ArtNouvCode');
+      final withCoordinates = await _supabase
+          .from('article')
+          .select('ArtNouvCode')
+          .not('ArtLatitude', 'is', null)
+          .not('ArtLongitude', 'is', null);
+      final payantTaxe = await _supabase
+          .from('article')
+          .select('ArtNouvCode')
+          .eq('ArtEtat', 1);
 
-  Future<bool> updateDelegation(DelegationModel delegation) async {
-    try {
-      await _supabase
-          .from('delegation')
-          .update(delegation.toJson())
-          .eq('CodeDeleg', delegation.codeDeleg);
-      return true;
+      return {
+        'total': total.length,
+        'withCoordinates': withCoordinates.length,
+        'payantTaxe': payantTaxe.length,
+        'arrondissements': EtablissementModel.arrondissements.length,
+      };
     } catch (e) {
-      print('Error updating delegation: $e');
-      return false;
-    }
-  }
-
-  Future<bool> deleteDelegation(int codeDeleg) async {
-    try {
-      await _supabase.from('delegation').delete().eq('CodeDeleg', codeDeleg);
-      return true;
-    } catch (e) {
-      print('Error deleting delegation: $e');
-      return false;
+      print('Error fetching etablissement stats: $e');
+      return {
+        'total': 0,
+        'withCoordinates': 0,
+        'payantTaxe': 0,
+        'arrondissements': EtablissementModel.arrondissements.length,
+      };
     }
   }
 }

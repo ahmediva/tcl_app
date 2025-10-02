@@ -3,8 +3,9 @@ import '../../models/etablissement_model.dart';
 import '../../services/database_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/arrondissement_provider.dart';
+import '../../providers/establishment_provider.dart';
 import '../../widgets/arrondissement_dropdown.dart';
+import '../../widgets/common/etablissement_dropdowns.dart';
 import '../../widgets/location_picker.dart';
 
 class EstablishmentFormNew extends StatefulWidget {
@@ -58,9 +59,12 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
   final TextEditingController _artLongitudeController = TextEditingController();
 
   String? _selectedArrondissement;
-  int _artEtat = 1; // Default to 1 (pays taxe)
+  String? _selectedEtat;
+  String? _selectedRedTypePrpor;
+  String? _selectedCatActivite;
   int _artImp = 1; // Default to 1 (imposable)
   int _artOccupVoie = 0; // Default to 0 (ne occupe pas la voie)
+  int _artEtat = 1; // Default to 1 (pays taxe)
   bool _isLoading = false;
   final DatabaseService _databaseService = DatabaseService();
 
@@ -71,11 +75,10 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
     // Set default values
     _artDateSaisieController.text = DateTime.now().toString().split(' ')[0];
     _artAgentController.text = 'Agent TCL';
-    // Load arrondissements when the form is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final arrondissementProvider = Provider.of<ArrondissementProvider>(context, listen: false);
-      arrondissementProvider.fetchArrondissementsActifs();
-    });
+    _selectedEtat = '1'; // Default to "Paye Taxe"
+    _selectedRedTypePrpor = '1'; // Default to Type 1
+    _selectedCatActivite = '1'; // Default to Catégorie 1
+    // No need to load arrondissements - they're now static in EtablissementModel
   }
 
   @override
@@ -133,6 +136,7 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
     });
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final establishmentProvider = Provider.of<EstablishmentProvider>(context, listen: false);
     final createdBy = authProvider.user?.fullName ?? 'Unknown';
 
     final newEtablissement = EtablissementModel(
@@ -149,7 +153,7 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
       artRedCode: _artRedCodeController.text.trim(),
       artMond: _artMondController.text.trim(),
       artOccup: _artOccupController.text.trim(),
-      artArrond: _selectedArrondissement ?? _artArrondController.text.trim(),
+      artArrond: _selectedArrondissement ?? '01',
       artRue: _artRueController.text.trim(),
       artTexteAdresse: _artTexteAdresseController.text.trim(),
       artSurTot: double.tryParse(_artSurTotController.text.trim()),
@@ -161,18 +165,18 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
       artSurDecl: double.tryParse(_artSurDeclController.text.trim()),
       artPrixMetre: double.tryParse(_artPrixMetreController.text.trim()),
       artBaseTaxe: int.tryParse(_artBaseTaxeController.text.trim()),
-      artEtat: _artEtat,
+      artEtat: int.tryParse(_selectedEtat ?? '1') ?? 1,
       artTaxeOffice: null,
       artNumRole: null,
       codeGouv: int.tryParse(_codeGouvController.text.trim()),
       codeDeleg: int.tryParse(_codeDelegController.text.trim()),
       codeImeda: int.tryParse(_codeImedaController.text.trim()),
       codeCom: _codeComController.text.trim(),
-      redTypePrpor: int.tryParse(_redTypePrporController.text.trim()),
+      redTypePrpor: int.tryParse(_selectedRedTypePrpor ?? '1') ?? 1,
       artTelDecl: _artTelDeclController.text.trim(),
       artEmailDecl: _artEmailDeclController.text.trim(),
       artCommentaire: _artCommentaireController.text.trim(),
-      artCatActivite: int.tryParse(_artCatActiviteController.text.trim()),
+      artCatActivite: int.tryParse(_selectedCatActivite ?? '1') ?? 1,
       artNomCommerce: _artNomCommerceController.text.trim(),
       artOccupVoie: _artOccupVoie,
       artLatitude: double.tryParse(_artLatitudeController.text.trim()) ?? 0.0,
@@ -181,20 +185,20 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> with Ticker
       updatedAt: DateTime.now(),
     );
 
-    final result = await _databaseService.addEtablissement(newEtablissement);
+    final success = await establishmentProvider.addEtablissement(newEtablissement);
 
     setState(() {
       _isLoading = false;
     });
 
-    if (result != null) {
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Article ajouté avec succès!')),
+        SnackBar(content: Text('Établissement ajouté avec succès!')),
       );
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de l\'ajout de l\'article. Veuillez réessayer.')),
+        SnackBar(content: Text('Échec de l\'ajout de l\'établissement. Veuillez réessayer.')),
       );
     }
   }
