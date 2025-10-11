@@ -4,6 +4,9 @@ import '../models/user_model.dart';
 
 class AuthService {
   final SupabaseClient _supabase = SupabaseConfig.client;
+  
+  // Store custom authenticated user (fallback for non-Supabase Auth users)
+  static TCLUser? _customAuthenticatedUser;
 
   // Get current authenticated user
   TCLUser? get currentUser => _supabase.auth.currentUser != null ? _getCurrentUserFromAuth() : null;
@@ -11,30 +14,72 @@ class AuthService {
   // Login with email and password
   Future<TCLUser?> login(String email, String password) async {
     try {
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      // First try Supabase Auth
+      try {
+        final response = await _supabase.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
 
-      print('Login response user: ${response.user}');
-      if (response.user != null) {
-        // Fetch user data from our users table
-        final userData = await _supabase
-            .from('users')
-            .select()
-            .eq('email', email)
-            .eq('is_active', true)
-            .single();
+        print('Supabase Auth login response user: ${response.user}');
+        if (response.user != null) {
+          // Fetch user data from our users table
+          final userData = await _supabase
+              .from('users')
+              .select()
+              .eq('email', email)
+              .eq('is_active', true)
+              .single();
 
-        print('User data fetched: $userData');
+          print('User data fetched: $userData');
 
-        // Update last login
-        await _supabase
-            .from('users')
-            .update({'last_login': DateTime.now().toIso8601String()})
-            .eq('id', userData['id']);
+          // Update last login
+          await _supabase
+              .from('users')
+              .update({'last_login': DateTime.now().toIso8601String()})
+              .eq('id', userData['id']);
 
-        return TCLUser.fromJson(userData);
+          return TCLUser.fromJson(userData);
+        }
+      } catch (supabaseError) {
+        print('Supabase Auth login failed: $supabaseError');
+        
+        // Fallback to custom authentication for existing users
+        try {
+          print('Attempting custom authentication for email: $email');
+          final userData = await _supabase
+              .from('users')
+              .select()
+              .eq('email', email)
+              .eq('is_active', true)
+              .single();
+
+          print('Custom auth - User data fetched: $userData');
+          
+          // Simple password comparison (in production, use proper hashing)
+          if (userData['password_hash'] == password) {
+            // Update last login
+            await _supabase
+                .from('users')
+                .update({'last_login': DateTime.now().toIso8601String()})
+                .eq('id', userData['id']);
+
+            // Store custom authenticated user
+            final customUser = TCLUser.fromJson(userData);
+            _customAuthenticatedUser = customUser;
+            
+            return customUser;
+          } else {
+            print('Custom auth - Password mismatch');
+          }
+        } catch (customError) {
+          print('Custom authentication failed: $customError');
+          // Check if it's a "no rows" error
+          if (customError.toString().contains('0 rows')) {
+            print('No user found with email: $email');
+            print('Please create the admin user in the database first');
+          }
+        }
       }
     } catch (e) {
       print('Login error: $e');
@@ -208,16 +253,20 @@ class AuthService {
   Future<TCLUser?> getCurrentUser() async {
     try {
       final authUser = _supabase.auth.currentUser;
-      if (authUser == null) return null;
+      if (authUser != null) {
+        // User authenticated via Supabase Auth
+        final userData = await _supabase
+            .from('users')
+            .select()
+            .eq('id', authUser.id)
+            .eq('is_active', true)
+            .single();
 
-      final userData = await _supabase
-          .from('users')
-          .select()
-          .eq('id', authUser.id)
-          .eq('is_active', true)
-          .single();
-
-      return TCLUser.fromJson(userData);
+        return TCLUser.fromJson(userData);
+      } else {
+        // Check if there's a custom authenticated user stored locally
+        return _customAuthenticatedUser;
+      }
     } catch (e) {
       print('Error getting current user: $e');
       return null;
@@ -309,9 +358,14 @@ class AuthService {
             .eq('id', user.id);
       }
       
+      // Clear custom authenticated user
+      _customAuthenticatedUser = null;
+      
       await _supabase.auth.signOut();
     } catch (e) {
       print('Logout error: $e');
+      // Clear custom authenticated user even if there's an error
+      _customAuthenticatedUser = null;
       await _supabase.auth.signOut();
     }
   }

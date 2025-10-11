@@ -6,13 +6,11 @@ class EstablishmentProvider with ChangeNotifier {
   List<EtablissementModel> _etablissements = [];
   bool _isLoading = false;
   String _searchQuery = '';
-  String? _selectedArrondissement;
   Map<String, dynamic> _stats = {};
 
   List<EtablissementModel> get etablissements => _etablissements;
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
-  String? get selectedArrondissement => _selectedArrondissement;
   Map<String, dynamic> get stats => _stats;
 
   // Filtered etablissements based on search and filters
@@ -21,17 +19,12 @@ class EstablishmentProvider with ChangeNotifier {
 
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((etablissement) {
-        return etablissement.artRue.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        return etablissement.artAdresse?.toLowerCase().contains(_searchQuery.toLowerCase()) == true ||
                etablissement.artNomCommerce?.toLowerCase().contains(_searchQuery.toLowerCase()) == true ||
-               etablissement.artOccup?.toLowerCase().contains(_searchQuery.toLowerCase()) == true ||
-               etablissement.displayArrondissement.toLowerCase().contains(_searchQuery.toLowerCase());
+               etablissement.artOccup?.toLowerCase().contains(_searchQuery.toLowerCase()) == true;
       }).toList();
     }
 
-    if (_selectedArrondissement != null) {
-      filtered = filtered.where((etablissement) => 
-        etablissement.artArrond == _selectedArrondissement).toList();
-    }
 
     return filtered;
   }
@@ -46,10 +39,6 @@ class EstablishmentProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  set selectedArrondissement(String? arrondissement) {
-    _selectedArrondissement = arrondissement;
-    notifyListeners();
-  }
 
   // Fetch all etablissements
   Future<void> fetchEtablissements() async {
@@ -70,18 +59,6 @@ class EstablishmentProvider with ChangeNotifier {
     }
   }
 
-  // Fetch etablissements by arrondissement
-  Future<void> fetchEtablissementsByArrondissement(String arrondissementCode) async {
-    isLoading = true;
-    try {
-      _etablissements = await DatabaseService().getEtablissementsByArrondissement(arrondissementCode);
-      notifyListeners();
-    } catch (e) {
-      print('Error fetching etablissements by arrondissement: $e');
-    } finally {
-      isLoading = false;
-    }
-  }
 
   // Search etablissements
   Future<void> searchEtablissements(String query) async {
@@ -122,16 +99,21 @@ class EstablishmentProvider with ChangeNotifier {
   // Add a new etablissement
   Future<bool> addEtablissement(EtablissementModel etablissement) async {
     try {
+      print('🔄 EstablishmentProvider: Tentative d\'ajout d\'établissement...');
       final newEtablissement = await DatabaseService().addEtablissement(etablissement);
       if (newEtablissement != null) {
         _etablissements.add(newEtablissement);
         notifyListeners();
+        print('✅ EstablishmentProvider: Établissement ajouté avec succès');
         return true;
+      } else {
+        print('⚠️ EstablishmentProvider: Aucun établissement retourné');
+        return false;
       }
     } catch (e) {
-      print('Error adding etablissement: $e');
+      print('❌ EstablishmentProvider: Erreur lors de l\'ajout: $e');
+      rethrow; // Re-lancer l'erreur pour que l'UI puisse la gérer
     }
-    return false;
   }
 
   // Update an existing etablissement
@@ -170,12 +152,10 @@ class EstablishmentProvider with ChangeNotifier {
   // Clear filters
   void clearFilters() {
     _searchQuery = '';
-    _selectedArrondissement = null;
     notifyListeners();
   }
 
-  // Get arrondissement options for dropdown
-  List<Map<String, String>> get arrondissementOptions => EtablissementModel.arrondissements;
+
 
   // Get etat options for dropdown
   List<Map<String, String>> get etatOptions => EtablissementModel.etatOptions;

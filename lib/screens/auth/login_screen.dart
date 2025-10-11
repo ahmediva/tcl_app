@@ -14,7 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _useUsername = false;
 
   @override
   void dispose() {
@@ -31,19 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
       
       try {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        bool success = false;
-        
-        if (_useUsername) {
-          success = await authProvider.loginWithUsername(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-        } else {
-          success = await authProvider.login(
-            _emailController.text.trim(),
-            _passwordController.text,
-          );
-        }
+        bool success = await authProvider.login(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
         
         if (success && mounted) {
           Navigator.pushReplacementNamed(context, '/');
@@ -123,49 +113,21 @@ class _LoginScreenState extends State<LoginScreen> {
               
               const SizedBox(height: 40),
               
-              // Login Method Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Login with: '),
-                  Switch(
-                    value: _useUsername,
-                    onChanged: (value) {
-                      setState(() {
-                        _useUsername = value;
-                        _emailController.clear();
-                      });
-                    },
-                  ),
-                  Text(
-                    _useUsername ? 'Username' : 'Email',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[800],
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Email/Username Field
+              // Email Field
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: _useUsername ? 'Username' : 'Email',
+                  labelText: 'Email',
                   prefixIcon: Icon(
-                    _useUsername ? Icons.person : Icons.email,
+                    Icons.email,
                     color: Colors.blue[600],
                   ),
                   border: const OutlineInputBorder(),
                 ),
-                keyboardType: _useUsername 
-                    ? TextInputType.text 
-                    : TextInputType.emailAddress,
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter ${_useUsername ? 'username' : 'email'}';
+                    return 'Please enter email';
                   }
                   return null;
                 },

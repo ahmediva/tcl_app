@@ -66,23 +66,7 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  // Login with username
-  Future<bool> loginWithUsername(String username, String password) async {
-    isLoading = true;
-    try {
-      final user = await AuthService().loginWithUsername(username, password);
-      if (user != null) {
-        _user = user;
-        notifyListeners();
-        return true;
-      }
-    } catch (e) {
-      print('Username login error: $e');
-    } finally {
-      isLoading = false;
-    }
-    return false;
-  }
+  
 
   // Register new user (admin only)
   Future<bool> registerUser({

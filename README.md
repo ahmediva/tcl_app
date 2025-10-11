@@ -36,6 +36,3 @@ lib/
 └── widgets/         # Composants réutilisables
 ```
 
-## Base de données
-
-Les migrations SQL sont disponibles dans le dossier `supabase_migrations/`.

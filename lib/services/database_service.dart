@@ -5,68 +5,24 @@ import '../models/etablissement_model.dart';
 class DatabaseService {
   final SupabaseClient _supabase = SupabaseConfig.client;
 
-  // Test database connection with better error handling
-  Future<void> testConnection() async {
-    try {
-      print('🔗 Testing Supabase connection...');
-      print('🔑 Using URL: ${SupabaseConfig.supabaseUrl}');
-      print('🔑 Using Key: ${SupabaseConfig.supabaseKey.substring(0, 20)}...');
-      
-      // Test 1: Try to get any data from article table
-      print('🧪 Test 1: Basic select query...');
-      final response = await _supabase.from('article').select('ArtNouvCode').limit(1);
-      print('✅ Test 1 successful! Response: $response');
-      
-      // Test 2: Try to get total count
-      print('🧪 Test 2: Count all records...');
-      final countResponse = await _supabase.from('article').select('ArtNouvCode');
-      print('✅ Test 2 successful! Total records: ${countResponse.length}');
-      
-      // Test 3: Try to get specific fields
-      print('🧪 Test 3: Select specific fields...');
-      final fieldsResponse = await _supabase.from('article').select('ArtNouvCode, ArtNomCommerce, ArtRue').limit(3);
-      print('✅ Test 3 successful! Fields response: $fieldsResponse');
-      
-    } catch (e) {
-      print('❌ Connection failed: $e');
-      print('🔍 Error details: ${e.toString()}');
-      
-      // Try to get more specific error information
-      if (e.toString().contains('RLS') || e.toString().contains('policy')) {
-        print('🚨 Row Level Security (RLS) issue detected!');
-        print('💡 The article table may not allow anonymous access');
-        print('🔧 Solution: Add RLS policy for anonymous users');
-      } else if (e.toString().contains('permission') || e.toString().contains('denied')) {
-        print('🚨 Permission denied!');
-        print('💡 Check your Supabase key permissions');
-      }
-    }
-  }
-
-  // Etablissement operations
+  // Get all establishments
   Future<List<EtablissementModel>> getEtablissements() async {
     try {
-      print('🔍 Fetching etablissements from Supabase...');
       final data = await _supabase.from('article').select();
-      print('📊 Raw data received: ${data.length} records');
-      if (data.isNotEmpty) {
-        print('📋 First record sample: ${data.first}');
-      }
-      final etablissements = data.map((json) => EtablissementModel.fromJson(json)).toList();
-      print('✅ Successfully converted ${etablissements.length} etablissements');
-      return etablissements;
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
-      print('❌ Error fetching etablissements: $e');
+      print('Error fetching etablissements: $e');
       return [];
     }
   }
 
+  // Get establishment by code
   Future<EtablissementModel?> getEtablissementByCode(String artNouvCode) async {
     try {
       final data = await _supabase
           .from('article')
           .select()
-          .eq('ArtNouvCode', artNouvCode)
+          .eq('artnouvcode', artNouvCode)
           .single();
       return EtablissementModel.fromJson(data);
     } catch (e) {
@@ -75,22 +31,24 @@ class DatabaseService {
     }
   }
 
+  // Add new establishment
   Future<EtablissementModel?> addEtablissement(EtablissementModel etablissement) async {
     try {
       final data = await _supabase.from('article').insert(etablissement.toJson()).select();
       if (data.isNotEmpty) {
         return EtablissementModel.fromJson(data.first);
       }
+      return null;
     } catch (e) {
       print('Error adding etablissement: $e');
-      print('Failed to insert data: ${etablissement.toJson()}');
+      rethrow;
     }
-    return null;
   }
 
+  // Update establishment
   Future<bool> updateEtablissement(EtablissementModel etablissement) async {
     try {
-      await _supabase.from('article').update(etablissement.toJson()).eq('ArtNouvCode', etablissement.artNouvCode);
+      await _supabase.from('article').update(etablissement.toJson()).eq('artnouvcode', etablissement.artNouvCode);
       return true;
     } catch (e) {
       print('Error updating etablissement: $e');
@@ -98,9 +56,10 @@ class DatabaseService {
     }
   }
 
+  // Delete establishment
   Future<bool> deleteEtablissement(String artNouvCode) async {
     try {
-      await _supabase.from('article').delete().eq('ArtNouvCode', artNouvCode);
+      await _supabase.from('article').delete().eq('artnouvcode', artNouvCode);
       return true;
     } catch (e) {
       print('Error deleting etablissement: $e');
@@ -108,40 +67,18 @@ class DatabaseService {
     }
   }
 
-  // Additional Etablissement operations for better functionality
-  Future<List<EtablissementModel>> getEtablissementsByArrondissement(String arrondissementCode) async {
-    try {
-      final data = await _supabase
-          .from('article')
-          .select()
-          .eq('ArtArrond', arrondissementCode);
-      return data.map((json) => EtablissementModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching etablissements by arrondissement: $e');
-      return [];
-    }
-  }
 
-  Future<List<EtablissementModel>> searchEtablissements(String query) async {
-    try {
-      final data = await _supabase
-          .from('article')
-          .select()
-          .or('ArtRue.ilike.%$query%,ArtNomCommerce.ilike.%$query%,ArtOccup.ilike.%$query%');
-      return data.map((json) => EtablissementModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error searching etablissements: $e');
-      return [];
-    }
-  }
+ 
 
+
+  // Get establishments with coordinates
   Future<List<EtablissementModel>> getEtablissementsWithCoordinates() async {
     try {
       final data = await _supabase
           .from('article')
           .select()
-          .not('ArtLatitude', 'is', null)
-          .not('ArtLongitude', 'is', null);
+          .not('artlatitude', 'is', null)
+          .not('artlongitude', 'is', null);
       return data.map((json) => EtablissementModel.fromJson(json)).toList();
     } catch (e) {
       print('Error fetching etablissements with coordinates: $e');
@@ -149,60 +86,48 @@ class DatabaseService {
     }
   }
 
-  Future<List<EtablissementModel>> getEtablissementsByEtat(int etat) async {
-    try {
-      final data = await _supabase
-          .from('article')
-          .select()
-          .eq('ArtEtat', etat);
-      return data.map((json) => EtablissementModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching etablissements by etat: $e');
-      return [];
-    }
-  }
-
-  Future<List<EtablissementModel>> getEtablissementsByImposable(int imposable) async {
-    try {
-      final data = await _supabase
-          .from('article')
-          .select()
-          .eq('ArtImp', imposable);
-      return data.map((json) => EtablissementModel.fromJson(json)).toList();
-    } catch (e) {
-      print('Error fetching etablissements by imposable: $e');
-      return [];
-    }
-  }
-
-  // Statistics and analytics
+  // Get establishment statistics
   Future<Map<String, dynamic>> getEtablissementStats() async {
     try {
-      final total = await _supabase.from('article').select('ArtNouvCode');
-      final withCoordinates = await _supabase
-          .from('article')
-          .select('ArtNouvCode')
-          .not('ArtLatitude', 'is', null)
-          .not('ArtLongitude', 'is', null);
-      final payantTaxe = await _supabase
-          .from('article')
-          .select('ArtNouvCode')
-          .eq('ArtEtat', 1);
-
+      final total = await _supabase.from('article').select('artnouvcode');
+      final payantTaxe = await _supabase.from('article').select('artnouvcode').eq('artetat', 1);
+      
       return {
         'total': total.length,
-        'withCoordinates': withCoordinates.length,
         'payantTaxe': payantTaxe.length,
-        'arrondissements': EtablissementModel.arrondissements.length,
+       
       };
     } catch (e) {
       print('Error fetching etablissement stats: $e');
       return {
         'total': 0,
-        'withCoordinates': 0,
         'payantTaxe': 0,
-        'arrondissements': EtablissementModel.arrondissements.length,
+  
       };
+    }
+  }
+
+  // Search establishments by multiple criteria
+  Future<List<EtablissementModel>> searchEtablissements(String query) async {
+    try {
+      final data = await _supabase
+          .from('article')
+          .select()
+          .or('artnouvcode.ilike.%$query%,artnomcommerce.ilike.%$query%,artproprietaire.ilike.%$query%,artredcode.ilike.%$query%,artoccup.ilike.%$query%,artadresse.ilike.%$query%');
+      return data.map((json) => EtablissementModel.fromJson(json)).toList();
+    } catch (e) {
+      print('Error searching etablissements: $e');
+      return [];
+    }
+  }
+
+  // Test database connection
+  Future<void> testConnection() async {
+    try {
+      await _supabase.from('article').select('artnouvcode').limit(1);
+      print('Database connection successful');
+    } catch (e) {
+      print('Database connection failed: $e');
     }
   }
 }

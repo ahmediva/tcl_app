@@ -83,6 +83,19 @@ class MainMenu extends StatelessWidget {
                     color: Colors.blue,
                     onTap: () => Navigator.pushNamed(context, '/establishment-list'),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Map Establishments
+                  _buildMenuButton(
+                    context,
+                    icon: Icons.map,
+                    title: 'Carte des Établissements',
+                    subtitle: 'Voir les établissements sur la carte',
+                    color: Colors.orange,
+                    onTap: () => Navigator.pushNamed(context, '/establishment-map'),
+                  ),
+                  const SizedBox(height: 16),
+
                 ],
               ),
             ),
