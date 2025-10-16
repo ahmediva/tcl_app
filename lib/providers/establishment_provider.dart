@@ -40,15 +40,18 @@ class EstablishmentProvider with ChangeNotifier {
   }
 
 
-  // Fetch all etablissements
-  Future<void> fetchEtablissements() async {
+  // Fetch all etablissements (with user filtering)
+  Future<void> fetchEtablissements({String? currentUserAgent, String? currentUserCode}) async {
     print('🚀 EstablishmentProvider: Starting to fetch etablissements...');
     isLoading = true;
     try {
       // Test connection first
       await DatabaseService().testConnection();
       
-      _etablissements = await DatabaseService().getEtablissements();
+      _etablissements = await DatabaseService().getEtablissements(
+        currentUserAgent: currentUserAgent,
+        currentUserCode: currentUserCode,
+      );
       print('📈 EstablishmentProvider: Fetched ${_etablissements.length} etablissements');
       notifyListeners();
     } catch (e) {
@@ -97,10 +100,10 @@ class EstablishmentProvider with ChangeNotifier {
   }
 
   // Add a new etablissement
-  Future<bool> addEtablissement(EtablissementModel etablissement) async {
+  Future<bool> addEtablissement(EtablissementModel etablissement, {String? currentUserCode}) async {
     try {
       print('🔄 EstablishmentProvider: Tentative d\'ajout d\'établissement...');
-      final newEtablissement = await DatabaseService().addEtablissement(etablissement);
+      final newEtablissement = await DatabaseService().addEtablissement(etablissement, currentUserCode: currentUserCode);
       if (newEtablissement != null) {
         _etablissements.add(newEtablissement);
         notifyListeners();

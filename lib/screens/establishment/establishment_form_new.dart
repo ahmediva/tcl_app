@@ -86,9 +86,13 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUser = authProvider.user;
       if (currentUser != null) {
-        final fullName = '${currentUser.firstName ?? ''} ${currentUser.lastName ?? ''}'.trim();
+        // Afficher le nom complet de l'utilisateur actuel
+        final fullName = '${currentUser.prenom} ${currentUser.nom}'.trim();
         if (fullName.isNotEmpty) {
           _artAgentController.text = fullName;
+        } else {
+          // Fallback au CIN si pas de nom
+          _artAgentController.text = currentUser.userCode;
         }
       }
     });
@@ -113,11 +117,39 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> {
     });
   }
 
+  // Méthode pour convertir un nom complet en CIN
+  Future<String> _getAgentCodeFromDisplayName(String displayName) async {
+    try {
+      // Si c'est déjà un CIN (8 chiffres), le retourner tel quel
+      if (RegExp(r'^[0-9]{8}$').hasMatch(displayName)) {
+        return displayName;
+      }
+      
+      // Sinon, chercher dans la base de données
+      final users = await DatabaseService().getAllUsers();
+      for (final user in users) {
+        final prenom = user['prenom'] as String? ?? '';
+        final nom = user['nom'] as String? ?? '';
+        final fullName = '$prenom $nom'.trim();
+        if (fullName.toLowerCase() == displayName.toLowerCase()) {
+          return user['user_code'] as String;
+        }
+      }
+      
+      // Si pas trouvé, retourner le nom tel quel (fallback)
+      return displayName;
+    } catch (e) {
+      print('❌ Error getting agent code: $e');
+      return displayName;
+    }
+  }
+
   void _initializeControllersWithData() {
     if (_editingEstablishment != null) {
       setState(() {
         _artNouvCodeController.text = _editingEstablishment!.artNouvCode;
-        _artAgentController.text = _editingEstablishment!.artAgent ?? '';
+        // Afficher le nom complet de l'agent si disponible, sinon le CIN
+        _artAgentController.text = _editingEstablishment!.agentDisplayName ?? _editingEstablishment!.artAgent ?? '';
         _artOccupController.text = _editingEstablishment!.artOccup ?? '';
         _artNomCommerceController.text = _editingEstablishment!.artNomCommerce ?? '';
         _artAdresseController.text = _editingEstablishment!.artAdresse ?? '';
@@ -597,9 +629,12 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> {
     // Appliquer le minimum (taxe immobilière)
     final montantFinal = montantTCL > taxeImmobiliere ? montantTCL : taxeImmobiliere;
 
+    // Convertir le nom d'affichage en CIN si nécessaire
+    final agentCode = await _getAgentCodeFromDisplayName(_artAgentController.text.trim());
+    
     final newEtablissement = EtablissementModel(
       artNouvCode: _artNouvCodeController.text.trim(),
-      artAgent: _artAgentController.text.trim(),
+      artAgent: agentCode,
       artOccup: _artOccupController.text.trim(),
       artNomCommerce: _artNomCommerceController.text.trim(),
       artAdresse: _artAdresseController.text.trim(),
@@ -637,7 +672,8 @@ class _EstablishmentFormNewState extends State<EstablishmentFormNew> {
         backgroundColor = success ? Colors.green : Colors.red;
       } else {
         // Add new establishment
-        success = await establishmentProvider.addEtablissement(newEtablissement);
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        success = await establishmentProvider.addEtablissement(newEtablissement, currentUserCode: authProvider.user?.userCode);
         message = success ? 'Établissement ajouté avec succès!' : 'Échec de l\'ajout de l\'établissement. Veuillez réessayer.';
         backgroundColor = success ? Colors.green : Colors.red;
       }

@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import '../../models/etablissement_model.dart';
 import '../../providers/establishment_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class EstablishmentMapScreen extends StatefulWidget {
   const EstablishmentMapScreen({Key? key}) : super(key: key);
@@ -27,7 +28,12 @@ class _EstablishmentMapScreenState extends State<EstablishmentMapScreen> {
 
   Future<void> _loadEstablishments() async {
     final establishmentProvider = Provider.of<EstablishmentProvider>(context, listen: false);
-    await establishmentProvider.fetchEtablissements();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    await establishmentProvider.fetchEtablissements(
+      currentUserAgent: authProvider.user?.agentType,
+      currentUserCode: authProvider.user?.userCode,
+    );
     
     setState(() {
       _markers = _createMarkers(establishmentProvider.etablissements);

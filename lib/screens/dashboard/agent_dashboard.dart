@@ -57,14 +57,6 @@ class AgentDashboard extends StatelessWidget {
                     },
                   ),
                   ListTile(
-                    leading: Icon(Icons.notifications),
-                    title: Text('Notifications'),
-                    subtitle: Text('View recent notifications'),
-                    onTap: () {
-                      // Navigate to notifications screen
-                    },
-                  ),
-                  ListTile(
                     leading: Icon(Icons.location_on, color: Colors.pink[600]),
                     title: Text('Démo Sélection d\'Emplacement'),
                     subtitle: Text('Tester le sélecteur de localisation avec Google Maps'),

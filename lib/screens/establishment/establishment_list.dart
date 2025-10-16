@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../routes/app_routes.dart';
 import '../../providers/establishment_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/etablissement_model.dart';
 
 class EstablishmentList extends StatefulWidget {
@@ -20,8 +21,27 @@ class _EstablishmentListState extends State<EstablishmentList> {
     super.initState();
     // Fetch establishments when the screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EstablishmentProvider>().fetchEtablissements();
+      final authProvider = context.read<AuthProvider>();
+      context.read<EstablishmentProvider>().fetchEtablissements(
+        currentUserAgent: authProvider.user?.agentType,
+        currentUserCode: authProvider.user?.userCode,
+      );
     });
+  }
+
+  // Méthode pour obtenir le nom complet de l'agent à partir du CIN
+  String _getAgentDisplayName(EtablissementModel establishment) {
+    // Utiliser le nom d'affichage enrichi si disponible
+    if (establishment.agentDisplayName != null && establishment.agentDisplayName!.isNotEmpty) {
+      return establishment.agentDisplayName!;
+    }
+    
+    // Sinon, utiliser le code agent comme fallback
+    if (establishment.artAgent != null && establishment.artAgent!.isNotEmpty) {
+      return establishment.artAgent!;
+    }
+    
+    return 'Non spécifié';
   }
 
   List<EtablissementModel> get _filteredEstablishments {
@@ -271,13 +291,15 @@ class _EstablishmentListState extends State<EstablishmentList> {
                         ),
                       ),
                       SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => _showDeleteConfirmation(context, establishment),
-                        icon: Icon(Icons.delete, color: Colors.red, size: 20),
-                        padding: EdgeInsets.all(4),
-                        constraints: BoxConstraints(minWidth: 32, minHeight: 32),
-                        tooltip: 'Supprimer',
-                      ),
+                      // Afficher le bouton de suppression seulement si l'utilisateur a les permissions
+                      if (context.watch<AuthProvider>().canDeleteArticles)
+                        IconButton(
+                          onPressed: () => _showDeleteConfirmation(context, establishment),
+                          icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                          padding: EdgeInsets.all(4),
+                          constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                          tooltip: 'Supprimer',
+                        ),
                     ],
                   ),
                 ],
@@ -333,7 +355,7 @@ class _EstablishmentListState extends State<EstablishmentList> {
                   Icon(Icons.person_outline, size: 14, color: Colors.orange[600]),
                   SizedBox(width: 4),
                   Text(
-                    'Agent: ${establishment.artAgent ?? 'Non spécifié'}',
+                    'Agent: ${_getAgentDisplayName(establishment)}',
                     style: TextStyle(
                       color: Colors.orange[700],
                       fontSize: 12,
@@ -628,26 +650,40 @@ class _EstablishmentListState extends State<EstablishmentList> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Fermer'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                print('🔧 Modifying establishment: ${establishment.artNomCommerce}');
-                Navigator.of(context).pop();
-                // Navigate to edit form with establishment data
-                Navigator.pushNamed(
-                  context, 
-                  AppRoutes.establishmentForm,
-                  arguments: establishment,
-                );
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.canEditArticles) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      print('🔧 Modifying establishment: ${establishment.artNomCommerce}');
+                      Navigator.of(context).pop();
+                      // Navigate to edit form with establishment data
+                      Navigator.pushNamed(
+                        context, 
+                        AppRoutes.establishmentForm,
+                        arguments: establishment,
+                      );
+                    },
+                    child: Text('Modifier'),
+                  );
+                }
+                return SizedBox.shrink();
               },
-              child: Text('Modifier'),
             ),
-            ElevatedButton(
-              onPressed: () => _showDeleteConfirmation(context, establishment),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Supprimer'),
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                if (authProvider.canDeleteArticles) {
+                  return ElevatedButton(
+                    onPressed: () => _showDeleteConfirmation(context, establishment),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text('Supprimer'),
+                  );
+                }
+                return SizedBox.shrink();
+              },
             ),
           ],
         );

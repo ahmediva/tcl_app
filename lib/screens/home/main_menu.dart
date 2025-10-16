@@ -63,14 +63,21 @@ class MainMenu extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  // Add Establishment
-                  _buildMenuButton(
-                    context,
-                    icon: Icons.add_business,
-                    title: 'Ajouter Établissement',
-                    subtitle: 'Créer un nouvel établissement',
-                    color: Colors.green,
-                    onTap: () => Navigator.pushNamed(context, '/establishment-form'),
+                  // Add Establishment - Only show if user can create articles
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      if (authProvider.canCreateArticles) {
+                        return _buildMenuButton(
+                          context,
+                          icon: Icons.add_business,
+                          title: 'Ajouter Établissement',
+                          subtitle: 'Créer un nouvel établissement',
+                          color: Colors.green,
+                          onTap: () => Navigator.pushNamed(context, '/establishment-form'),
+                        );
+                      }
+                      return SizedBox.shrink();
+                    },
                   ),
                   const SizedBox(height: 16),
                   
@@ -95,6 +102,30 @@ class MainMenu extends StatelessWidget {
                     onTap: () => Navigator.pushNamed(context, '/establishment-map'),
                   ),
                   const SizedBox(height: 16),
+
+                  // Admin Section - Only show for admins
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      if (authProvider.canManageUsers) {
+                        return Column(
+                          children: [
+                            const Divider(),
+                            const SizedBox(height: 16),
+                            _buildMenuButton(
+                              context,
+                              icon: Icons.admin_panel_settings,
+                              title: 'Gestion des Utilisateurs',
+                              subtitle: 'Gérer les agents et leurs permissions',
+                              color: Colors.red,
+                              onTap: () => Navigator.pushNamed(context, '/user-management'),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      }
+                      return SizedBox.shrink();
+                    },
+                  ),
 
                 ],
               ),

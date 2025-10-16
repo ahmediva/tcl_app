@@ -1,0 +1,38 @@
+=====================================================
+TCL MOBILE APP - RÈGLES DE CALCUL DES TAXES
+=====================================================
+
+Le taux de référence est déterminé selon les servitudes municipales :
+
+- Servitudes municipales = 1 ou 2 : 0.900 DT/m²
+- Servitudes municipales = 3 ou 4 : 1.125 DT/m²  
+- Servitudes municipales = 5 : 1.345 DT/m²
+- Autres servitudes (plus que 5) : 1.570 DT/m²
+
+2. CALCUL DE LA TAXE IMMOBILIÈRE
+=====================================================
+Formule :
+Taxe Immobilière = Surface Couverte × Taux de Référence
+
+3. CALCUL DE LA TAXE TCL (Taxe Communale Locale)
+=====================================================
+La taxe TCL est calculée selon deux composantes :
+
+A. Taxe sur le Chiffre d'Affaires Local :
+   TCL Local = Chiffre d'Affaires Local × 0.002 (0,2%)
+
+B. Taxe sur les Exportations :
+   TCL Exportations = Exportations × 0.001 (0,1%)
+
+C. Montant TCL Total :
+   Montant TCL = TCL Local + TCL Exportations
+
+4. RÈGLE DU MINIMUM
+=====================================================
+
+Le montant final de la taxe est le maximum entre :
+- Le montant TCL calculé
+- La taxe immobilière
+
+Formule :
+Montant Final = MAX(Montant TCL, Taxe Immobilière)

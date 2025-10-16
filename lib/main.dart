@@ -4,6 +4,7 @@ import 'config/supabase_config.dart';
 import 'routes/app_routes.dart';
 import 'providers/auth_provider.dart';
 import 'providers/establishment_provider.dart';
+import 'providers/citizen_provider.dart';
 import 'widgets/auth/auth_wrapper.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/main_menu.dart';
@@ -23,6 +24,7 @@ class TCLApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => EstablishmentProvider()),
+        ChangeNotifierProvider(create: (context) => CitizenProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {

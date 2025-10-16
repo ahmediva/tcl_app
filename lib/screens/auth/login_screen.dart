@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/citizen_provider.dart';
+import '../../services/citizen_service.dart';
+import '../citizen/citizen_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -23,41 +26,70 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      if (mounted) {
-        setState(() => _isLoading = true);
+    if (!_formKey.currentState!.validate()) return;
+    
+    // Check if widget is still mounted before starting
+    if (!mounted) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      
+      print('🔐 Attempting login for: $email');
+      
+      // Try to login as agent first
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      bool agentSuccess = await authProvider.login(email, password);
+      
+      // Check if widget is still mounted after async operation
+      if (!mounted) return;
+      
+      if (agentSuccess) {
+        // Agent login successful
+        print('✅ Agent login successful, navigating to dashboard...');
+        Navigator.pushReplacementNamed(context, '/');
+        return;
       }
       
-      try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        bool success = await authProvider.login(
-          _emailController.text.trim(),
-          _passwordController.text,
+      // If agent login failed, try citizen login
+      final citizenProvider = Provider.of<CitizenProvider>(context, listen: false);
+      bool citizenSuccess = await citizenProvider.login(email, password);
+      
+      // Check if widget is still mounted after async operation
+      if (!mounted) return;
+      
+      if (citizenSuccess) {
+        print('✅ Citizen login successful, navigating to dashboard...');
+        Navigator.pushReplacementNamed(context, '/citizen-dashboard');
+        return;
+      }
+      
+      // Both logins failed
+      print('❌ Both agent and citizen login failed for: $email');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email ou mot de passe incorrect.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      
+    } catch (e) {
+      print('❌ Login error: $e');
+      // Only show error if widget is still mounted
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Une erreur est survenue: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
-        
-        if (success && mounted) {
-          Navigator.pushReplacementNamed(context, '/');
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login failed. Please check your credentials.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('An error occurred: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      }
+    } finally {
+      // Only update state if widget is still mounted
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -101,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     Text(
-                      'Taxe sur les établissements',
+                      'Agents & Citoyens',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.blue[600],

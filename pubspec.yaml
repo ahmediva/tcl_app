@@ -28,7 +28,7 @@ dependencies:
   
   # Maps
   google_maps_flutter: ^2.5.0
-  geolocator: ^10.1.0
+  geolocator: ^10.1.1
   
   # Utils
   shared_preferences: ^2.2.2

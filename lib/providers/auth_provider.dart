@@ -11,24 +11,22 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   // Permission getters
-  bool get canCreateArticles => _user?.permissions.canCreateArticles ?? false;
-  bool get canEditArticles => _user?.permissions.canEditArticles ?? false;
-  bool get canDeleteArticles => _user?.permissions.canDeleteArticles ?? false;
-  bool get canViewReports => _user?.permissions.canViewReports ?? false;
-  bool get canExportData => _user?.permissions.canExportData ?? false;
-  bool get canManageUsers => _user?.permissions.canManageUsers ?? false;
+  bool get canCreateArticles => _user?.canCreateArticles ?? false;
+  bool get canEditArticles => _user?.canEditArticles ?? false;
+  bool get canDeleteArticles => _user?.canDeleteArticles ?? false;
+  bool get canManageUsers => _user?.canManageUsers ?? false;
 
   // User type getters
   bool get isAdmin => _user?.isAdmin ?? false;
   bool get isSupervisor => _user?.isSupervisor ?? false;
   bool get isControlAgent => _user?.isControlAgent ?? false;
   bool get isCollector => _user?.isCollector ?? false;
-  bool get isConsultant => _user?.isConsultant ?? false;
+  // isConsultant n'existe plus dans le nouveau modèle
 
-  // Geographic assignment getters
-  String? get assignedArrondissement => _user?.assignedArrondissement;
-  String? get assignedCommune => _user?.assignedCommune;
-  bool get hasGeographicAssignment => _user?.hasGeographicAssignment ?? false;
+  // User info getters
+  String get fullName => _user?.fullName ?? '';
+  String get userCode => _user?.userCode ?? '';
+  String get email => _user?.email ?? '';
 
   set isLoading(bool value) {
     _isLoading = value;
@@ -38,13 +36,15 @@ class AuthProvider with ChangeNotifier {
   // Initialize auth provider
   Future<void> initialize() async {
     try {
-      final user = await AuthService().getCurrentUser();
-      if (user != null) {
-        _user = user;
-        notifyListeners();
-      }
+      // Test connection first
+      await AuthService().testConnection();
+      print('✅ Database connection successful');
+      // Create test user for mohamed@tcl.tn
+      await AuthService().createTestUser();
+      // Create test citizen for ahmedhajjjem01@gmail.com
+      await AuthService().createTestCitizen();
     } catch (e) {
-      print('Initialization error: $e');
+      print('❌ Initialization error: $e');
     }
   }
 
@@ -145,12 +145,12 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Get articles by geographic area
-  Future<List<Map<String, dynamic>>> getArticlesByArea(String? arrondissement, String? commune) async {
+  // Get articles by zone (simplified)
+  Future<List<Map<String, dynamic>>> getArticlesByZone(String? zone) async {
     try {
-      return await AuthService().getArticlesByArea(arrondissement, commune);
+      return await AuthService().getArticlesByZone(zone);
     } catch (e) {
-      print('Error getting articles by area: $e');
+      print('Error getting articles by zone: $e');
       return [];
     }
   }

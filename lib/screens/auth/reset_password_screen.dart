@@ -4,20 +4,26 @@ import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../utils/validators.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+  
+  const ResetPasswordScreen({Key? key, required this.email}) : super(key: key);
+
   @override
-  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _isSuccess = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -26,8 +32,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => _isLoading = true);
       
       try {
-        // Utiliser Supabase pour envoyer un email de réinitialisation
-        final success = await AuthService().resetPassword(_emailController.text.trim());
+        // Update password directly in database
+        final success = await AuthService().updatePasswordDirectly(
+          widget.email,
+          _newPasswordController.text,
+        );
         
         if (success) {
           setState(() {
@@ -38,7 +47,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Email not found. Please check your email address.'),
+              content: Text('Failed to reset password. Please try again.'),
               backgroundColor: Colors.red,
             ),
           );
@@ -59,7 +68,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Forgot Password'),
+        title: const Text('Reset Password'),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
       ),
@@ -80,7 +89,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Column(
                   children: [
                     Icon(
-                      Icons.lock_outline,
+                      Icons.lock_reset,
                       size: 64,
                       color: Colors.blue[800],
                     ),
@@ -93,6 +102,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         color: Colors.blue[800],
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'For: ${widget.email}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue[600],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -100,89 +117,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const SizedBox(height: 40),
               
               if (!_isSuccess) ...[
-                Text(
-                  'Enter your email address to reset your password.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                // New Password Field
+                CustomTextField(
+                  controller: _newPasswordController,
+                  labelText: 'New Password',
+                  obscureText: true,
+                  validator: Validators.validatePassword,
                 ),
                 
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
                 
+                // Confirm Password Field
                 CustomTextField(
-                  controller: _emailController,
-                  labelText: 'Email',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.validateEmail,
+                  controller: _confirmPasswordController,
+                  labelText: 'Confirm New Password',
+                  obscureText: true,
+                  validator: (value) {
+                    if (value != _newPasswordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
                 ),
                 
                 const SizedBox(height: 24),
                 
-                // Warning about email limit
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber, color: Colors.orange[600], size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Email service temporarily unavailable (rate limit exceeded)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.orange[700],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Primary: Direct reset (now main option)
+                // Reset Button
                 CustomButton(
-                  text: 'Reset Password Directly',
-                  onPressed: () {
-                    if (_emailController.text.isNotEmpty) {
-                      Navigator.pushNamed(
-                        context,
-                        '/reset-password',
-                        arguments: _emailController.text.trim(),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter your email first'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
-                  },
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Alternative: Try email (disabled)
-                TextButton(
-                  onPressed: null, // Disabled due to rate limit
-                  child: Text(
-                    'Send Email (Rate Limit Exceeded)',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
-                  ),
+                  text: _isLoading ? 'Resetting...' : 'Reset Password',
+                  onPressed: _isLoading ? null : _resetPassword,
                 ),
               ] else ...[
-                // Success message
+                // Success Message
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
@@ -199,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Reset Link Sent!',
+                        'Password Reset Successful!',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -208,7 +174,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Check your email for the password reset link.',
+                        'Your password has been updated successfully.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -221,6 +187,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 
                 const SizedBox(height: 24),
                 
+                // Back to Login Button
                 CustomButton(
                   text: 'Back to Login',
                   onPressed: () {

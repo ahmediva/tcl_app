@@ -156,6 +156,7 @@ class EtablissementModel {
   // Essential fields only - to avoid database schema issues
   final String artNouvCode;           // Article Nouveau Code (REQUIRED)
   final String? artAgent;             // Agent
+  final String? agentDisplayName;     // Nom d'affichage de l'agent (prénom + nom)
   final String? artOccup;             // Occupant
   final String? artNomCommerce;       // Nom Commerce
   final String? artAdresse;           // Adresse complète
@@ -183,6 +184,7 @@ class EtablissementModel {
   EtablissementModel({
     required this.artNouvCode,
     this.artAgent,
+    this.agentDisplayName,
     this.artOccup,
     this.artNomCommerce,
     this.artAdresse,
@@ -213,6 +215,7 @@ class EtablissementModel {
     return EtablissementModel(
       artNouvCode: json['artnouvcode'] ?? '',
       artAgent: json['artagent'],
+      agentDisplayName: json['agent_display_name'],
       artOccup: json['artoccup'],
       artNomCommerce: json['artnomcommerce'],
       artAdresse: json['artadresse'],
@@ -290,6 +293,7 @@ class EtablissementModel {
   EtablissementModel copyWith({
     String? artNouvCode,
     String? artAgent,
+    String? agentDisplayName,
     String? artOccup,
     String? artNomCommerce,
     String? artAdresse,
@@ -317,6 +321,7 @@ class EtablissementModel {
     return EtablissementModel(
       artNouvCode: artNouvCode ?? this.artNouvCode,
       artAgent: artAgent ?? this.artAgent,
+      agentDisplayName: agentDisplayName ?? this.agentDisplayName,
       artOccup: artOccup ?? this.artOccup,
       artNomCommerce: artNomCommerce ?? this.artNomCommerce,
       artAdresse: artAdresse ?? this.artAdresse,

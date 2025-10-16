@@ -4,23 +4,32 @@ import '../screens/home/main_menu.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/reset_password_screen.dart';
 import '../screens/dashboard/admin_dashboard.dart';
 import '../screens/dashboard/agent_dashboard.dart';
 import '../screens/establishment/establishment_form_new.dart';
 import '../screens/establishment/establishment_list.dart';
 import '../screens/establishment/establishment_map.dart';
+import '../screens/citizen/citizen_map_screen.dart';
+import '../screens/citizen/citizen_dashboard.dart';
+import '../screens/admin/user_management_screen.dart';
 import '../providers/auth_provider.dart';
+import '../providers/citizen_provider.dart';
 
 class AppRoutes {
   static const String home = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String adminDashboard = '/admin-dashboard';
   static const String agentDashboard = '/agent-dashboard';
   static const String establishmentForm = '/establishment-form';
   static const String establishmentList = '/establishment-list';
   static const String establishmentMap = '/establishment-map';
+  static const String citizenMap = '/citizen-map';
+  static const String citizenDashboard = '/citizen-dashboard';
+  static const String userManagement = '/user-management';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -43,6 +52,13 @@ class AppRoutes {
       
       case forgotPassword:
         return MaterialPageRoute(builder: (_) => ForgotPasswordScreen());
+      
+      case resetPassword:
+        final email = settings.arguments as String?;
+        if (email == null) {
+          return MaterialPageRoute(builder: (_) => const LoginScreen());
+        }
+        return MaterialPageRoute(builder: (_) => ResetPasswordScreen(email: email));
       
       case adminDashboard:
         return MaterialPageRoute(
@@ -100,6 +116,51 @@ class AppRoutes {
           ),
         );
       
+      case citizenMap:
+        return MaterialPageRoute(builder: (_) => CitizenMapScreen());
+      
+      case citizenDashboard:
+        return MaterialPageRoute(
+          builder: (_) => Consumer<CitizenProvider>(
+            builder: (context, citizenProvider, child) {
+              if (citizenProvider.isAuthenticated && citizenProvider.citizen != null) {
+                return CitizenDashboard(citizen: citizenProvider.citizen!);
+              } else {
+                return const LoginScreen();
+              }
+            },
+          ),
+        );
+      
+      case userManagement:
+        return MaterialPageRoute(
+          builder: (_) => Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              if (!authProvider.isAuthenticated) {
+                return const LoginScreen();
+              }
+              if (!authProvider.canManageUsers) {
+                return Scaffold(
+                  appBar: AppBar(title: Text('Accès Refusé')),
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.block, size: 64, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text(
+                          'Vous n\'avez pas les permissions nécessaires',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              return const UserManagementScreen();
+            },
+          ),
+        );
       
       default:
         return MaterialPageRoute(

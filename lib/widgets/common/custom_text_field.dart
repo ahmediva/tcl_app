@@ -7,6 +7,8 @@ class CustomTextField extends StatelessWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final Widget? prefixIcon;
+  final int? maxLength;
+  final void Function(String)? onChanged;
 
   const CustomTextField({
     Key? key,
@@ -16,6 +18,8 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.prefixIcon,
+    this.maxLength,
+    this.onChanged,
   }) : super(key: key);
 
   @override
@@ -36,6 +40,8 @@ class CustomTextField extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      maxLength: maxLength,
+      onChanged: onChanged,
     );
   }
 }
