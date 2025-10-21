@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class GoogleMapsConfig {
   // Google Maps API key for Android
-  static const String apiKey = 'AIzaSyDSIboBh4tU5lbLoYfJ9jr9AKFBoJOXzfo';
+  static const String apiKey = 'AIzaSyBkgIRFqUXtBumLkCkstDOhaJgOPGfIEAs';
   
   // Default map settings for Tunisia
   static const double defaultLatitude = 36.8065;  // Tunis center
@@ -65,7 +65,7 @@ class GoogleMapsConfig {
 ''';
   
   // Check if API key is configured
-  static bool get isConfigured => apiKey.isNotEmpty && apiKey != 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
+  static bool get isConfigured => apiKey.isNotEmpty && apiKey != 'AIzaSyBkgIRFqUXtBumLkCkstDOhaJgOPGfIEAs';
   
   // Get map style as a list
   static List<Map<String, dynamic>> get mapStyleList {

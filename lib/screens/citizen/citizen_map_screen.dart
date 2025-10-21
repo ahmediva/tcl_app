@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../models/citizen_model.dart';
 import '../../models/etablissement_model.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class CitizenMapScreen extends StatefulWidget {
   @override
@@ -30,25 +31,28 @@ class _CitizenMapScreenState extends State<CitizenMapScreen> {
     }
   }
 
-  void _loadData() {
-    // Get data from route arguments
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (args != null) {
-      setState(() {
-        _citizen = args['citizen'] as TCLCitizen;
-        _establishments = args['establishments'] as List<EtablissementModel>;
-        _markers = _createMarkers(_establishments);
-        _isLoading = false;
-        _hasLoadedData = true;
-      });
-    } else {
-      // If no arguments provided, show empty state
-      setState(() {
-        _isLoading = false;
-        _hasLoadedData = true;
-      });
-    }
+void _loadData() async {
+  // Request location permission first
+  final status = await Permission.location.request();
+  
+  // Get data from route arguments
+  final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+  if (args != null) {
+    setState(() {
+      _citizen = args['citizen'] as TCLCitizen;
+      _establishments = args['establishments'] as List<EtablissementModel>;
+      _markers = _createMarkers(_establishments);
+      _isLoading = false;
+      _hasLoadedData = true;
+    });
+  } else {
+    // If no arguments provided, show empty state
+    setState(() {
+      _isLoading = false;
+      _hasLoadedData = true;
+    });
   }
+}
 
   Set<Marker> _createMarkers(List<EtablissementModel> establishments) {
     return establishments
